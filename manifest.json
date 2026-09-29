@@ -1,8 +1,8 @@
 {
  "schema": 1,
- "generated": "2026-09-29T14:55:51+00:00",
+ "generated": "2026-09-29T15:07:25+00:00",
  "web": {
-  "version": "20260929T145551Z",
+  "version": "20260929T150725Z",
   "minApp": 43,
   "base": "web/",
   "files": [
@@ -35,6 +35,16 @@
     "path": "data/tt_SUB.js",
     "sha256": "e5647c6247a0ae68e62dbb719d05113da7ccd4c38c87e5ec7780a930a020d266",
     "size": 473392
+   },
+   {
+    "path": "subway.png",
+    "sha256": "b91402c18faa685eb5a4c85257fb9bfa03cbdec31bf34788d57fd6690dafef60",
+    "size": 123458
+   },
+   {
+    "path": "meitetsu.png",
+    "sha256": "6e6ee48d5b63a572b516fd2a48b6769d0659febbe6aff55d1542e1389b0ca885",
+    "size": 878137
    }
   ]
  },
