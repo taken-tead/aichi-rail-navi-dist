@@ -1,15 +1,15 @@
 {
  "schema": 1,
- "generated": "2026-09-29T12:49:19+00:00",
+ "generated": "2026-09-29T12:55:45+00:00",
  "web": {
-  "version": "20260929T124919Z",
+  "version": "20260929T125545Z",
   "minApp": 40,
   "base": "web/",
   "files": [
    {
     "path": "index.html",
-    "sha256": "b85f9b87cb3e0903de091c9b72fdb44b7960715d7d8e63066a6e0d6e03ab4937",
-    "size": 335705
+    "sha256": "0a662d40a7b44179f49c869046bd8ec13bbd543ac52131918b722ef5f0ea83e9",
+    "size": 335682
    },
    {
     "path": "data/geo.js",
@@ -28,8 +28,8 @@
    },
    {
     "path": "data/tt_SUB.js",
-    "sha256": "0ed9e0ce9a35c08a51839ba3745092a3a4828018a8d7131f5fc1cc6ee6cafdd7",
-    "size": 17340
+    "sha256": "33ca941e492eec167a6341dc3242cd22dd5bf1fc64f221294078963c33eb9283",
+    "size": 435313
    }
   ]
  },
