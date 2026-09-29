@@ -994,6 +994,7 @@ body.mapfull .navbar{display:none}
 .ich .a small{display:block;font-size:11px;font-weight:600;color:var(--on-surface-variant)}
 .ich .code{font-size:11px;color:var(--on-surface-variant);font-weight:500}
 
+.newsupd{padding:0 16px 8px;border-bottom:1px solid var(--outline-variant)}
 .newsbody{padding:2px 16px 18px}
 .nv{padding:12px 0;border-top:1px solid var(--outline-variant)}
 .nv:first-child{border-top:0}
@@ -1457,6 +1458,10 @@ body.mapfull .navbar{display:none}
     <div class="sheethd">
       <strong>更新情報</strong>
       <button class="btn icon" id="newsClose" type="button" aria-label="閉じる"></button>
+    </div>
+    <div class="newsupd" id="nwUpd" hidden>
+      <p class="hint" id="nwNote"></p>
+      <div class="vgacts"><button class="btn tonal small" id="nwCheck" type="button">今すぐ確認</button></div>
     </div>
     <div class="dsbody newsbody" id="newsBody"></div>
   </div>
@@ -5755,7 +5760,8 @@ setTimeout(wgSync,1500);
 /* 更新情報。新しい版を先頭に足す（v は app/build.gradle の versionName に合わせる） */
 var NEWS=[
   {v:"5.11", d:"2026-09-29", items:[
-    "メニューに「利用履歴を印刷」を追加しました。ICカードをタッチすると、券売機で印字できる利用履歴のように、入場・出場などの記録を一覧にして、プリンターで印刷したりPDFに保存したりできます（プリンターは端末の印刷機能に対応したもの）。"
+    "メニューに「利用履歴を印刷」を追加しました。「カードを読み取る」を押してICカードをタッチすると、券売機で印字できる利用履歴のように、入場・出場などの記録を一覧にして、プリンターで印刷したりPDFに保存したりできます（プリンターは端末の印刷機能に対応したもの）。",
+    "この画面（更新情報）にも、更新データがあるかを確かめる「今すぐ確認」ボタンを付けました。"
   ]},
   {v:"5.10", d:"2026-09-29", items:[
     "ICカード：「読み取る」ボタンを押したときだけ読み取るようにしました（30秒待ちます）。",
@@ -5829,13 +5835,13 @@ function menuBack(){
 var MENU_ACT={
   set:function(){ showPane("Set"); },
   ic:function(){ showPane("Card"); },
-  /* 読み取り済みならそのまま印刷画面へ。まだなら、カード画面で読み取りを始めて、読めたら印刷画面を開く */
+  /* 読み取り済みならそのまま印刷画面へ。まだなら、カード画面で「読み取る」ボタンを押してもらい、読めたら印刷画面を開く
+     （読み取りはボタンを押すまで始めない） */
   pr:function(){
     showPane("Card");
     if(icShown && icRows.length){ prOpen(); return; }
     icPrintWant=true;
-    if(!icOn) icScan();
-    if(!icOn) icPrintWant=false;
+    if(!$("icRead").hidden) icSet("印刷する場合は、「カードを読み取る」を押してから、ICカードをスマホの背面にタッチしてください。読み取れると、印刷の画面が開きます。","");
   },
   fb:function(){ fbOpen(); },
   news:function(){ newsOpen(); }
@@ -5864,9 +5870,24 @@ function newsOpen(){
       (cur===n.v?'<span class="cur">いまの版</span>':'')+'</h3><ul>'+
       n.items.map(function(t){ return '<li>'+t+'</li>'; }).join("")+'</ul></section>';
   }).join("");
+  nwUpd();
   $("newsSheet").hidden=false;
   pushNav();
 }
+/* 更新の確認（設定の「アプリとデータの更新」と同じ確認。確認中は表示を追いかける） */
+function nwUpd(){
+  var box=$("nwUpd");
+  if(!(window.Android && window.Android.checkUpdate && window.Android.updateInfo)){ box.hidden=true; return; }
+  var o=appInfo();
+  box.hidden=false;
+  var d=function(t){ var x=new Date(t); return (x.getMonth()+1)+"/"+x.getDate()+" "+two(x.getHours())+":"+two(x.getMinutes()); };
+  $("nwNote").textContent=(o.last?"最終確認 "+d(o.last)+"。":"まだ確認していません。")+(o.result?" "+o.result:"")+
+    (o.apk?" 新しいアプリ本体 "+o.apk+" があります（通知から入れてください）。":"");
+  $("nwCheck").disabled=!!o.busy; $("nwCheck").textContent=o.busy?"確認中…":"今すぐ確認";
+  if(o.busy) setTimeout(function(){ if(!$("newsSheet").hidden) nwUpd(); },1000);
+  if(typeof renderUpd==="function") renderUpd();
+}
+$("nwCheck").onclick=function(){ try{ window.Android.checkUpdate(); }catch(e){} setTimeout(nwUpd,300); };
 $("newsClose").innerHTML=IC.close;
 $("newsClose").onclick=function(){ history.back(); };
 bindSheetDismiss("newsSheet",function(){ history.back(); });
@@ -6271,8 +6292,7 @@ var PR_CSS='.prp{background:#fff;color:#000;font:12px/1.5 sans-serif;padding:14p
   '.prp table{width:100%;border-collapse:collapse;font-size:11.5px}'+
   '.prp th,.prp td{border-bottom:1px solid #999;padding:3px 4px;text-align:left;vertical-align:top}'+
   '.prp th{font-weight:700;border-bottom:1px solid #000}'+
-  '.prp .r{text-align:right;white-space:nowrap}'+
-  '.prp .n{font-size:10px;color:#444;margin-top:8px}';
+  '.prp .r{text-align:right;white-space:nowrap}';
 function two(n){ return ("0"+n).slice(-2); }
 function esc(s){ return String(s).replace(/[&<>"]/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
 function prStamp(d){ return d.getFullYear()+"/"+(d.getMonth()+1)+"/"+d.getDate()+" "+two(d.getHours())+":"+two(d.getMinutes()); }
@@ -6301,8 +6321,6 @@ function prBuild(){
     });
     h+='</table>';
   }
-  h+='<div class="n">あいち鉄道ナビで、ICカードから読み取った内容を表示したものです。金額は、ひとつ前の履歴との残高の差です（いちばん古い1件は分かりません）。'+
-    '駅名は有志の対応表によるもので、誤りや、載っていない駅（線区・駅コードで表示）があります。鉄道会社が発行する正式な記録・証明ではありません。</div>';
   return h;
 }
 function prOpen(){
