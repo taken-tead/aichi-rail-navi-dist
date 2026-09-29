@@ -1446,7 +1446,7 @@ body.mapfull .navbar{display:none}
     </div>
     <button class="mitem" type="button" role="menuitem" data-menu="set"><span class="mi" data-ic="navSet"></span><span class="mt">設定<small>定期券・表示・音声駅案内</small></span></button>
     <button class="mitem" type="button" role="menuitem" data-menu="ic"><span class="mi" data-ic="card"></span><span class="mt">ICカード<small>タッチして利用履歴を見る</small></span></button>
-    <button class="mitem" type="button" role="menuitem" data-menu="pr"><span class="mi" data-ic="print"></span><span class="mt">利用履歴を印刷<small>入場・出場などの記録を紙やPDFに</small></span></button>
+    <button class="mitem" type="button" role="menuitem" data-menu="pr"><span class="mi" data-ic="print"></span><span class="mt">利用履歴を印刷<small>ICカードの利用履歴を紙やPDFに</small></span></button>
     <button class="mitem" type="button" role="menuitem" data-menu="fb"><span class="mi" data-ic="mail"></span><span class="mt">要望メッセージ<small>開発者に改善要望を送る</small></span></button>
     <button class="mitem" type="button" role="menuitem" data-menu="news"><span class="mi" data-ic="info"></span><span class="mt">更新情報<small>最新版の変更内容</small></span></button>
   </nav>
@@ -5820,7 +5820,7 @@ setTimeout(wgSync,1500);
 /* 更新情報。新しい版を先頭に足す（v は app/build.gradle の versionName に合わせる） */
 var NEWS=[
   {v:"5.11", d:"2026-09-29", items:[
-    "メニューに「利用履歴を印刷」を追加しました。「カードを読み取る」を押してICカードをタッチすると、券売機で印字できる利用履歴のように、入場・出場などの記録を一覧にして、プリンターで印刷したりPDFに保存したりできます（プリンターは端末の印刷機能に対応したもの）。",
+    "メニューに「利用履歴を印刷」を追加しました。「カードを読み取る」を押してICカードをタッチすると、券売機で印字できる利用履歴のように、区間・金額・残高を一覧にして、プリンターで印刷したりPDFに保存したりできます（プリンターは端末の印刷機能に対応したもの）。",
     "この画面（更新情報）にも、更新データがあるかを確かめる「今すぐ確認」ボタンを付けました。"
   ]},
   {v:"5.10", d:"2026-09-29", items:[
@@ -6341,7 +6341,7 @@ document.addEventListener("visibilitychange",function(){
 });
 
 /* ===== 利用履歴の印刷 =====
-   券売機の「利用履歴の印字」のように、読み取った履歴と改札の記録（入場・出場）を一枚の紙にまとめる。
+   券売機の「利用履歴の印字」のように、読み取った利用履歴を一枚の紙にまとめる（改札の記録は載せない）。
    プレビューと印刷で同じ HTML・CSS（.prp）を使う。印刷は Bridge.printHtml（端末の印刷画面：プリンター／PDF保存）。
    内容は画面に出ている読み取り結果だけで、どこにも保存しない。 */
 var icReadAt=null, prBody="";
@@ -6357,7 +6357,7 @@ function two(n){ return ("0"+n).slice(-2); }
 function esc(s){ return String(s).replace(/[&<>"]/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
 function prStamp(d){ return d.getFullYear()+"/"+(d.getMonth()+1)+"/"+d.getDate()+" "+two(d.getHours())+":"+two(d.getMinutes()); }
 function prBuild(){
-  var rows=icRows, gate=icGate;
+  var rows=icRows;
   var h='<h1>交通系ICカード 利用履歴</h1><div class="m">読み取り '+prStamp(icReadAt||new Date())+
     '　残高 '+(rows.length?yen(rows[0].bal)+'円':'–')+'</div>';
   h+='<h2>利用履歴（新しい順・最大20件）</h2><table><tr><th>日付</th><th>種別</th><th>区間</th><th class="r">金額</th><th class="r">残高</th></tr>';
@@ -6372,15 +6372,6 @@ function prBuild(){
     h+='<tr><td>'+r.y+'/'+r.m+'/'+r.d+'</td><td>'+esc(name)+'</td><td>'+path+'</td><td class="r">'+amt+'</td><td class="r">'+yen(r.bal)+'円</td></tr>';
   });
   h+='</table>';
-  if(gate.length){
-    h+='<h2>改札の記録（入場・出場）</h2><table><tr><th>日時</th><th>種別</th><th>駅</th></tr>';
-    gate.forEach(function(g){
-      var s=icGateStation(rows,g.l,g.s), own=s.known?s.c+(s.l?" "+s.l:""):"";
-      h+='<tr><td>'+g.y+'/'+g.m+'/'+g.d+' '+g.tm.slice(0,2)+':'+g.tm.slice(2)+'</td><td>'+esc(IC_GATE[g.t]||("種別 0x"+hex2(g.t)))+
-        '</td><td>'+esc(s.n)+(own?'<br><small>'+esc(own)+'</small>':"")+'</td></tr>';
-    });
-    h+='</table>';
-  }
   return h;
 }
 function prOpen(){
