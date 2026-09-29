@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 430" width="400" height="430" font-family="sans-serif">
+  <rect width="400" height="430" rx="16" fill="#f3f6fb"/>
+  <text x="200" y="30" text-anchor="middle" font-size="15" font-weight="700" fill="#1f2937">自動更新のしくみ</text>
+  <g font-size="13" fill="#1f2937">
+    <rect x="30" y="48" width="340" height="62" rx="12" fill="#dbe7ff" stroke="#8aa9e6"/>
+    <text x="46" y="72" font-weight="700">① 開発者が変更を GitHub に送る</text>
+    <text x="46" y="94" font-size="12">（main に push / マージ）</text>
+    <path d="M200 112 V132" stroke="#5b6472" stroke-width="2.5"/><polygon points="193,131 207,131 200,140" fill="#5b6472"/>
+    <rect x="30" y="146" width="340" height="76" rx="12" fill="#e2f5e6" stroke="#8cc79a"/>
+    <text x="46" y="170" font-weight="700">② GitHub Actions が自動でビルド</text>
+    <text x="46" y="192" font-size="12">APK・画面・データを作り、署名して</text>
+    <text x="46" y="210" font-size="12">配布用のリポジトリに公開</text>
+    <path d="M200 224 V244" stroke="#5b6472" stroke-width="2.5"/><polygon points="193,243 207,243 200,252" fill="#5b6472"/>
+    <rect x="30" y="258" width="340" height="62" rx="12" fill="#fff1d6" stroke="#e0b866"/>
+    <text x="46" y="282" font-weight="700">③ 端末が確認する</text>
+    <text x="46" y="304" font-size="12">無線LANのとき約12時間ごと・アプリを開いたとき</text>
+    <path d="M200 322 V342" stroke="#5b6472" stroke-width="2.5"/><polygon points="193,341 207,341 200,350" fill="#5b6472"/>
+    <rect x="30" y="356" width="340" height="60" rx="12" fill="#fde3e3" stroke="#e39a9a"/>
+    <text x="46" y="378" font-size="12"><tspan font-weight="700">画面・データ</tspan> → 次に開いたときから反映</text>
+    <text x="46" y="399" font-size="12"><tspan font-weight="700">アプリ本体</tspan> → 通知 → タップでインストール</text>
+  </g>
+</svg>

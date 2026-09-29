@@ -1,15 +1,15 @@
 {
  "schema": 1,
- "generated": "2026-09-29T22:47:33+00:00",
+ "generated": "2026-09-29T23:01:59+00:00",
  "web": {
-  "version": "20260929T224733Z",
+  "version": "20260929T230159Z",
   "minApp": 45,
   "base": "web/",
   "files": [
    {
     "path": "index.html",
-    "sha256": "4657ae45a72583276e54aab9cfe6b6ca75f6e4e2cde6bb5761be9ea30a698638",
-    "size": 487774
+    "sha256": "ffb529d60b2f2da28bed32a8cea0692577a0aa8f37ce605863fed9ac427955fa",
+    "size": 492762
    },
    {
     "path": "data/geo.js",
@@ -35,6 +35,36 @@
     "path": "data/tt_SUB.js",
     "sha256": "e5647c6247a0ae68e62dbb719d05113da7ccd4c38c87e5ec7780a930a020d266",
     "size": 473392
+   },
+   {
+    "path": "help/update_flow.svg",
+    "sha256": "f52a3bb5784e762e2b95bed14325b2245035800dd660807cd19e061b1c6ab1de",
+    "size": 1989
+   },
+   {
+    "path": "help/update_manual.svg",
+    "sha256": "1840d0f8a4e3ea5cfa764395e14060b462d1bf4513cebd9ac68905b24c87b6ba",
+    "size": 3592
+   },
+   {
+    "path": "help/update_menu.png",
+    "sha256": "9481d27fc91a172e0ae0471080b4d3f00903f617c23b7502f1509ef56d6f5496",
+    "size": 86772
+   },
+   {
+    "path": "help/update_news.png",
+    "sha256": "1fa11c30b186a7a2dcfed35e78325cc52b2e80b8ede51a1f63cbc90195a8f92e",
+    "size": 62016
+   },
+   {
+    "path": "help/update_perm.png",
+    "sha256": "72bf2059ec92114db982f08d4c77c782f8e09bfb01f61128ecdb91c5838a3222",
+    "size": 46121
+   },
+   {
+    "path": "help/update_settings.png",
+    "sha256": "e9f5df31d92d279b2a443c0438bd1a74a172eb69cc40b56629802dbb644daee2",
+    "size": 57309
    },
    {
     "path": "subway.png",

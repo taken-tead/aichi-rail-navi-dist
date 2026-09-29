@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 598" width="400" height="598" font-family="sans-serif">
+  <rect width="400" height="598" rx="16" fill="#f3f6fb"/>
+  <text x="200" y="30" text-anchor="middle" font-size="15" font-weight="700" fill="#1f2937">APK を手で入れる手順</text>
+  <g font-size="13" fill="#1f2937">
+        <circle cx="42" cy="72" r="14" fill="#2f5bd3"/><text x="42" y="77" text-anchor="middle" fill="#fff" font-weight="700">1</text>
+    <text x="68" y="68" font-weight="700">GitHub の「Actions」を開く</text>
+    <text x="68" y="86" font-size="12">上のタブ「Actions」→「build-apk」</text>
+    <path d="M42 88 V104" stroke="#5b6472" stroke-width="2.5"/><polygon points="35,103 49,103 42,112" fill="#5b6472"/>
+    <circle cx="42" cy="134" r="14" fill="#2f5bd3"/><text x="42" y="139" text-anchor="middle" fill="#fff" font-weight="700">2</text>
+    <text x="68" y="130" font-weight="700">最新の成功（緑✓）の実行を開く</text>
+    <text x="68" y="148" font-size="12">main に入った、最新のもの</text>
+    <path d="M42 150 V166" stroke="#5b6472" stroke-width="2.5"/><polygon points="35,165 49,165 42,174" fill="#5b6472"/>
+    <circle cx="42" cy="196" r="14" fill="#2f5bd3"/><text x="42" y="201" text-anchor="middle" fill="#fff" font-weight="700">3</text>
+    <text x="68" y="192" font-weight="700">下の「Artifacts」を押す</text>
+    <text x="68" y="210" font-size="12">「aichi-rail-navi-apk」をダウンロード</text>
+    <path d="M42 212 V228" stroke="#5b6472" stroke-width="2.5"/><polygon points="35,227 49,227 42,236" fill="#5b6472"/>
+    <circle cx="42" cy="258" r="14" fill="#2f5bd3"/><text x="42" y="263" text-anchor="middle" fill="#fff" font-weight="700">4</text>
+    <text x="68" y="254" font-weight="700">ZIP を解凍して APK を取り出す</text>
+    <text x="68" y="272" font-size="12">中に .apk ファイルが入っています</text>
+    <path d="M42 274 V290" stroke="#5b6472" stroke-width="2.5"/><polygon points="35,289 49,289 42,298" fill="#5b6472"/>
+    <circle cx="42" cy="320" r="14" fill="#2f5bd3"/><text x="42" y="325" text-anchor="middle" fill="#fff" font-weight="700">5</text>
+    <text x="68" y="316" font-weight="700">APK を端末に送る</text>
+    <text x="68" y="334" font-size="12">USB・メール・クラウドなど</text>
+    <text x="68" y="352" font-size="12">（端末で直接ダウンロードでも可）</text>
+    <path d="M42 336 V370" stroke="#5b6472" stroke-width="2.5"/><polygon points="35,369 49,369 42,378" fill="#5b6472"/>
+    <circle cx="42" cy="400" r="14" fill="#2f5bd3"/><text x="42" y="405" text-anchor="middle" fill="#fff" font-weight="700">6</text>
+    <text x="68" y="396" font-weight="700">端末で APK をタップ → インストール</text>
+    <text x="68" y="414" font-size="12">初めてなら「この提供元のアプリを許可」を</text>
+    <text x="68" y="432" font-size="12">オンにする</text>
+    <rect x="22" y="476" width="356" height="110" rx="12" fill="#fff1d6" stroke="#e0b866"/>
+    <text x="36" y="498" font-weight="700" font-size="12">上書きできる条件</text>
+    <text x="36" y="518" font-size="12">署名鍵が登録されたビルドだけ、今のアプリに</text>
+    <text x="36" y="536" font-size="12">上書きできます。登録が無いビルドは別の鍵で</text>
+    <text x="36" y="554" font-size="12">署名されるため、今のアプリを消して入れます</text>
+    <text x="36" y="570" font-size="12">（お気に入りや設定も消えます）。</text>
+  </g>
+</svg>
