@@ -1271,7 +1271,7 @@ body.mapfull .navbar{display:none}
     <section class="card elev" id="icGateCard" hidden aria-label="改札の記録">
       <div class="cardhd"><h2>改札の記録（カードから読めた分）</h2></div>
       <div id="icGateList"></div>
-      <p class="hint">カードに残っている直近の改札の記録を、読めたまま出しています。「定期入場」「定期出場」の駅は、定期券の範囲内にあるものとして、上の候補に使っています。値がおかしいときは、コピーして「要望メッセージ」に貼ってください。</p>
+      <p class="hint">カードに残っている直近の改札の記録を、読めたまま出しています。「定期入場」「定期出場」の駅は、定期券の範囲内にあるものとして、上の候補に使っています。値や候補がおかしいときは、「診断内容をコピー」（履歴・改札の記録・上の候補が入ります）を「要望メッセージ」に貼ってください。</p>
       <div class="vgacts"><button class="btn small" id="icGateCopy" type="button">診断内容をコピー</button></div>
     </section>
   </section>
@@ -6025,7 +6025,7 @@ function icRender(o){
   $("icNote").textContent = (unknown?"駅名の対応表にない駅は、線区コード・駅コードのまま表示しています。":"")+
     "金額は、ひとつ前の履歴との残高の差です（いちばん古い1件は分かりません）。";
   icPassMsg="";
-  icGate=o.gate||[];
+  icGate=o.gate||[]; icRows=rows;
   icPassAnalyze(rows,icGate);
   icPassRender();
   icGateRender(rows);
@@ -6034,7 +6034,7 @@ function icRender(o){
    カードの定期券情報（区間・有効期間）は鍵が要って読めない。代わりに、履歴の「運賃0円の乗車」
    （定期券の範囲内に乗ると運賃0円になる）から、路線ごとに範囲を推定して候補にする。
    合っているとは限らないので、路線・起点・終点はユーザーが直してから登録する。 */
-var icCands=[], icSkipped=[], icPassMsg="";
+var icCands=[], icSkipped=[], icPassMsg="", icRows=[];
 /* 駅名をアプリの駅名にそろえて比べる（名鉄は「名鉄」が付く駅がある、ヶ／ケの表記ゆれ） */
 function icNorm(n){ return String(n).replace(/^名鉄/,"").replace(/駅$/,"").replace(/[ヶヵケ]/g,"ケ"); }
 /* IC の駅 → アプリの {路線, 駅番} の候補。路線名が合うものを先に */
@@ -6105,8 +6105,8 @@ function icPassAnalyze(rows,gate){
     } else {                                          /* 乗った駅・改札の駅をすべて含む範囲 */
       lo=Math.min.apply(null,ends); hi=Math.max.apply(null,ends);
     }
-    if(lo===hi) return;                               /* 駅が1つだけでは範囲にならない */
-    icCands.push({li:li,a:lo,b:hi,trips:W.T,pts:W.P});
+    /* 駅が1つだけのとき：改札の記録で片端だけ分かった。もう一方はユーザーに選んでもらう */
+    icCands.push({li:li,a:lo,b:hi,trips:W.T,pts:W.P,half:lo===hi});
   });
 }
 /* 改札の記録の表示（読めた値をそのまま。意味が推測のものは「欄」と書く） */
@@ -6126,9 +6126,22 @@ function icGateRender(rows){
       '<div class="code">'+sub.join("　")+'</div></div>';
   }).join("");
 }
+/* 診断用：履歴・改札の記録・アプリが出した候補をまとめてコピーする（貼るかどうかはユーザーが決める） */
+function icDiag(){
+  return "IC診断 "+JSON.stringify({
+    rows:icRows, gate:icGate,
+    cands:icCands.map(function(c){
+      var L=LINES[c.li];
+      return {line:L.short, from:L.st[c.a].n, to:L.st[c.b].n,
+        trips:c.trips.map(function(t){ return t.d+" "+t.na+"→"+t.nb; }),
+        pts:c.pts.map(function(p){ return p.d+" "+p.n+" "+p.k; })};
+    }),
+    skipped:icSkipped
+  });
+}
 $("icGateCopy").onclick=function(){
   var b=this;
-  b.textContent=copyText("IC改札記録 "+JSON.stringify(icGate))?"コピーしました":"長押しで選択してください";
+  b.textContent=copyText(icDiag())?"コピーしました":"長押しで選択してください";
   setTimeout(function(){ b.textContent="診断内容をコピー"; },2000);
 };
 function icPassHas(c){
@@ -6155,6 +6168,7 @@ function icPassRender(){
         '<div class="icpr"><select data-pa="'+i+'" aria-label="起点">'+sts(c.a)+'</select><span class="w">〜</span>'+
         '<select data-pb="'+i+'" aria-label="終点">'+sts(c.b)+'</select></div>'+
         '<div class="icpn">根拠（運賃0円の乗車 '+c.trips.length+'件・改札の定期記録 '+c.pts.length+'件）：'+ev+'</div>'+
+        (same?'<div class="icpn"><b>'+(c.half?'片方の駅だけ分かりました。もう一方':'起点と終点')+'の駅を選んでください。</b></div>':"")+
         (has?'<div class="done">登録済みです</div>':
          '<button class="btn tonal small" type="button" data-preg="'+i+'"'+(same?' disabled':'')+'>この区間を定期券に登録</button>')+
         '</div>';
@@ -6168,7 +6182,17 @@ $("icPassList").addEventListener("change",function(e){
   var t=e.target, i;
   if(t.hasAttribute("data-pl")){
     i=+t.getAttribute("data-pl");
-    var li=+t.value; icCands[i].li=li; icCands[i].a=0; icCands[i].b=LINES[li].st.length-1;
+    /* 路線を変えたときは、同じ名前の駅があれば引き継ぐ。なければ選び直してもらう（全線を初期値にしない） */
+    var c0=icCands[i], li=+t.value, ST=LINES[li].st;
+    var carry=function(si){
+      var nm=icNorm(LINES[c0.li].st[si].n);
+      for(var k=0;k<ST.length;k++){ if(icNorm(ST[k].n)===nm) return k; }
+      return -1;
+    };
+    var ia=carry(c0.a), ib=carry(c0.b);
+    /* 両方引き継げたときだけ範囲にする。片方だけなら、その駅を起点にして終点は選び直してもらう */
+    var base=ia>=0?ia:(ib>=0?ib:0);
+    c0.li=li; c0.a=(ia>=0&&ib>=0)?ia:base; c0.b=(ia>=0&&ib>=0)?ib:base; c0.half=false;
   } else if(t.hasAttribute("data-pa")){ icCands[+t.getAttribute("data-pa")].a=+t.value; }
   else if(t.hasAttribute("data-pb")){ icCands[+t.getAttribute("data-pb")].b=+t.value; }
   else return;
