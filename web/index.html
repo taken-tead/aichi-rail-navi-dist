@@ -1268,6 +1268,12 @@ body.mapfull .navbar{display:none}
       <p class="hint">履歴で運賃が0円だった乗車は、定期券の範囲内だったと考えられます。そこから範囲を推定しました。カードの定期券情報そのものは、鍵が必要で読めないため、実際の範囲より狭い・違うことがあります。路線・起点・終点を直してから登録してください。</p>
       <div id="icPassList"></div>
     </section>
+    <section class="card elev" id="icGateCard" hidden aria-label="改札の記録">
+      <div class="cardhd"><h2>改札の記録（カードから読めた分）</h2></div>
+      <div id="icGateList"></div>
+      <p class="hint">カードに残っている直近の改札の記録を、読めたまま出しています。「定期入場」「定期出場」の駅は、定期券の範囲内にあるものとして、上の候補に使っています。値がおかしいときは、コピーして「要望メッセージ」に貼ってください。</p>
+      <div class="vgacts"><button class="btn small" id="icGateCopy" type="button">診断内容をコピー</button></div>
+    </section>
   </section>
 
   <!-- ============ 設定 ============ -->
@@ -5726,11 +5732,15 @@ setTimeout(wgSync,1500);
 
 /* 更新情報。新しい版を先頭に足す（v は app/build.gradle の versionName に合わせる） */
 var NEWS=[
+  {v:"5.10", d:"2026-09-29", items:[
+    "ICカード：「読み取る」ボタンを押したときだけ読み取るようにしました（30秒待ちます）。",
+    "ICカードの利用履歴と改札の記録から、定期券の範囲を推定して候補に出します（運賃0円の乗車・定期入出場が根拠）。路線・起点・終点を直して、定期券として登録できます。",
+    "ICカードの改札の記録（直近の入出場）を、読めた値のまま確認できるようにしました。"
+  ]},
   {v:"5.9", d:"2026-09-29", items:[
     "画面左上にメニュー（≡）を追加しました。",
     "設定をメニューへ移しました（下のタブは「ルート・時刻表・発車標・地図」の4つになりました）。",
-    "ICカード：manaca・Suica などの交通系ICカードをスマホにタッチ（「読み取る」ボタンを押してから）すると、残高と利用履歴（日付・区間・金額）を見られます。読み取った内容は保存も送信もしません。NFC対応の端末のみ。",
-    "ICカードの利用履歴から、定期券の範囲を推定して候補に出します（運賃0円の乗車が根拠）。路線・起点・終点を直して、定期券として登録できます。",
+    "ICカード：manaca・Suica などの交通系ICカードをスマホにタッチすると、残高と利用履歴（日付・区間・金額）を見られます。読み取った内容は保存も送信もしません。NFC対応の端末のみ。",
     "要望メッセージ：不具合の報告や改善の要望を、アプリの中から開発者に送れます（通信が必要です。返信はできません）。",
     "更新情報：この画面です。"
   ]},
@@ -6015,8 +6025,10 @@ function icRender(o){
   $("icNote").textContent = (unknown?"駅名の対応表にない駅は、線区コード・駅コードのまま表示しています。":"")+
     "金額は、ひとつ前の履歴との残高の差です（いちばん古い1件は分かりません）。";
   icPassMsg="";
-  icPassAnalyze(rows);
+  icGate=o.gate||[];
+  icPassAnalyze(rows,icGate);
   icPassRender();
+  icGateRender(rows);
 }
 /* ===== 定期券の推定 =====
    カードの定期券情報（区間・有効期間）は鍵が要って読めない。代わりに、履歴の「運賃0円の乗車」
@@ -6049,9 +6061,22 @@ function icTrip(a,b){
   }); });
   return best;
 }
-function icPassAnalyze(rows){
+/* 改札の記録（0x108F）：種別。定期入場・定期出場の駅は、定期券の範囲内にある */
+var IC_GATE={0x00:"精算出場",0x01:"精算出場",0x20:"出場",0x21:"駅務機器出場",0x22:"割引出場",0x24:"割引出場",
+  0x40:"定期出場",0x80:"均一区間入場",0xA0:"入場",0xA2:"割引入場",0xC0:"定期入場"};
+var icGate=[];
+/* 改札記録には地域の情報がないので、履歴に出てきた地域から順に駅名を引く */
+function icGateStation(rows,l,s){
+  var seen=[];
+  rows.forEach(function(r){ [(r.reg>>6)&3,(r.reg>>4)&3].forEach(function(a){ if(seen.indexOf(a)<0) seen.push(a); }); });
+  [1,0,2,3].forEach(function(a){ if(seen.indexOf(a)<0) seen.push(a); });
+  for(var k=0;k<seen.length;k++){ var x=icStName(seen[k],l,s); if(x.known) return x; }
+  return icStName(seen[0],l,s);
+}
+function icPassAnalyze(rows,gate){
   var by={}, order=[];
   icSkipped=[];
+  var line=function(li){ if(!by[li]){ by[li]={T:[],P:[]}; order.push(li); } return by[li]; };
   rows.forEach(function(r,i){
     if(r.p!==1 || i+1>=rows.length) return;          /* 運賃支払だけ。いちばん古い1件は金額が分からない */
     if(r.bal-rows[i+1].bal!==0) return;               /* 0円の乗車だけ */
@@ -6059,22 +6084,53 @@ function icPassAnalyze(rows){
     var a=icStName((r.reg>>6)&3,r.l1,r.s1), b=icStName((r.reg>>4)&3,r.l2,r.s2);
     var t=icTrip(a,b);
     if(!t){ icSkipped.push(a.n+"→"+b.n); return; }
-    if(!by[t.li]){ by[t.li]=[]; order.push(t.li); }
-    by[t.li].push({a:t.a,b:t.b,d:r.m+"/"+r.d,na:a.n,nb:b.n});
+    line(t.li).T.push({a:t.a,b:t.b,d:r.m+"/"+r.d,na:a.n,nb:b.n});
   });
-  icCands=order.map(function(li){
-    var T=by[li], L=LINES[li], lo, hi;
-    if(L.loop){                                       /* 環状線は、いちばん長く乗った区間 */
-      var best=T[0], bl=-1;
-      T.forEach(function(t){ var n=arcSegs(li,t.a,t.b).length; if(n>bl){ bl=n; best=t; } });
+  /* 改札の記録で「定期入場・定期出場」になっている駅は、定期券の範囲内 */
+  (gate||[]).forEach(function(g){
+    if(g.t!==0x40 && g.t!==0xC0) return;
+    var f=icFind(icGateStation(rows,g.l,g.s))[0];
+    if(f) line(f.li).P.push({si:f.si,d:g.m+"/"+g.d,n:LINES[f.li].st[f.si].n,k:IC_GATE[g.t]});
+  });
+  icCands=[];
+  order.forEach(function(li){
+    var W=by[li], L=LINES[li], lo, hi, ends=[];
+    W.T.forEach(function(t){ ends.push(t.a,t.b); });
+    W.P.forEach(function(p){ ends.push(p.si); });
+    if(L.loop){                                       /* 環状線は、いちばん長く乗った区間だけ見る */
+      if(!W.T.length) return;
+      var best=W.T[0], bl=-1;
+      W.T.forEach(function(t){ var n=arcSegs(li,t.a,t.b).length; if(n>bl){ bl=n; best=t; } });
       lo=best.a; hi=best.b;
-    } else {                                          /* 乗った駅をすべて含む範囲 */
-      lo=Math.min.apply(null,T.map(function(t){ return Math.min(t.a,t.b); }));
-      hi=Math.max.apply(null,T.map(function(t){ return Math.max(t.a,t.b); }));
+    } else {                                          /* 乗った駅・改札の駅をすべて含む範囲 */
+      lo=Math.min.apply(null,ends); hi=Math.max.apply(null,ends);
     }
-    return {li:li,a:lo,b:hi,trips:T};
+    if(lo===hi) return;                               /* 駅が1つだけでは範囲にならない */
+    icCands.push({li:li,a:lo,b:hi,trips:W.T,pts:W.P});
   });
 }
+/* 改札の記録の表示（読めた値をそのまま。意味が推測のものは「欄」と書く） */
+function icGateRender(rows){
+  $("icGateCard").hidden=false;
+  if(!icGate.length){
+    $("icGateList").innerHTML='<div class="empty">改札の記録は読めませんでした（このカードには無いか、読み取れない形式です）。</div>';
+    return;
+  }
+  $("icGateList").innerHTML=icGate.map(function(g){
+    var s=icGateStation(rows,g.l,g.s), kind=IC_GATE[g.t]||("種別 0x"+hex2(g.t));
+    var own=s.known?s.c+(s.l?" "+s.l:""):"";
+    var sub=["金額欄 "+yen(g.amt)+"円","定期欄 "+yen(g.pf)+"円"];
+    if(g.cl||g.cs) sub.push("定期の駅欄 "+icGateStation(rows,g.cl,g.cs).n);
+    return '<div class="ich"><div class="d">'+g.y+'/'+g.m+'/'+g.d+' '+g.tm.slice(0,2)+':'+g.tm.slice(2)+'　'+kind+'</div>'+
+      '<div class="p">'+s.n+'</div>'+(own?'<div class="code">'+own+'</div>':"")+
+      '<div class="code">'+sub.join("　")+'</div></div>';
+  }).join("");
+}
+$("icGateCopy").onclick=function(){
+  var b=this;
+  b.textContent=copyText("IC改札記録 "+JSON.stringify(icGate))?"コピーしました":"長押しで選択してください";
+  setTimeout(function(){ b.textContent="診断内容をコピー"; },2000);
+};
 function icPassHas(c){
   var A=LINES[c.li].st[c.a].c, B=LINES[c.li].st[c.b].c;
   return st.passes.some(function(p){ return (p.a===A&&p.b===B)||(p.a===B&&p.b===A); });
@@ -6083,20 +6139,22 @@ function icPassRender(){
   var box=$("icPassCard"), h="";
   box.hidden=false;
   if(!icCands.length){
-    h='<p class="hint">履歴に、運賃が0円の乗車（定期券の範囲内の乗車）が見つかりませんでした。'+
+    h='<p class="hint">履歴と改札の記録に、定期券の範囲内とみられる乗車（運賃0円・定期入出場）が見つかりませんでした。'+
       '定期券は「設定」から手で登録できます。</p>';
   } else {
     h=icCands.map(function(c,i){
       var L=LINES[c.li];
       var lines=LINES.map(function(x,li){ return '<option value="'+li+'"'+(li===c.li?' selected':'')+'>'+x.name+'</option>'; }).join("");
       var sts=function(sel){ return L.st.map(function(s,si){ return '<option value="'+si+'"'+(si===sel?' selected':'')+'>'+s.n+'</option>'; }).join(""); };
-      var ev=c.trips.slice(0,3).map(function(t){ return t.d+" "+t.na+"→"+t.nb; }).join("、")+(c.trips.length>3?" ほか"+(c.trips.length-3)+"件":"");
+      var evs=c.trips.map(function(t){ return t.d+" "+t.na+"→"+t.nb; });
+      c.pts.forEach(function(p){ evs.push(p.d+" "+p.n+"（改札の記録：「"+p.k+"」）"); });
+      var ev=evs.slice(0,4).join("、")+(evs.length>4?" ほか"+(evs.length-4)+"件":"");
       var same=c.a===c.b, has=!same && icPassHas(c);
       return '<div class="icpc">'+
         '<select data-pl="'+i+'" aria-label="路線">'+lines+'</select>'+
         '<div class="icpr"><select data-pa="'+i+'" aria-label="起点">'+sts(c.a)+'</select><span class="w">〜</span>'+
         '<select data-pb="'+i+'" aria-label="終点">'+sts(c.b)+'</select></div>'+
-        '<div class="icpn">根拠（運賃0円の乗車 '+c.trips.length+'件）：'+ev+'</div>'+
+        '<div class="icpn">根拠（運賃0円の乗車 '+c.trips.length+'件・改札の定期記録 '+c.pts.length+'件）：'+ev+'</div>'+
         (has?'<div class="done">登録済みです</div>':
          '<button class="btn tonal small" type="button" data-preg="'+i+'"'+(same?' disabled':'')+'>この区間を定期券に登録</button>')+
         '</div>';
@@ -6129,7 +6187,7 @@ $("icPassList").addEventListener("click",function(e){
 window.icResult=function(o){ try{ icRender(o); }catch(e){ icSet("表示できませんでした。","err"); } };
 $("icClear").onclick=function(){
   $("icRes").hidden=true; $("icClear").hidden=true; $("icList").innerHTML=""; icShown=false;
-  $("icPassCard").hidden=true; icCands=[]; icSkipped=[];
+  $("icPassCard").hidden=true; $("icGateCard").hidden=true; icCands=[]; icSkipped=[]; icGate=[];
   if(!icOn) icIdle();
 };
 $("icNfcSet").onclick=function(){ try{ icBridge().openNfcSettings(); }catch(e){} };
