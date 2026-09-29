@@ -1,0 +1,1 @@
+# aichi-rail-navi-dist
