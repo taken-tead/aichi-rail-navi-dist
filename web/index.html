@@ -1241,10 +1241,11 @@ body.mapfull .navbar{display:none}
         <div class="ictxt" id="icMsg"></div>
       </div>
       <div class="vgacts">
+        <button class="btn filled" id="icRead" type="button" hidden>カードを読み取る</button>
         <button class="btn tonal small" id="icNfcSet" type="button" hidden>NFCの設定を開く</button>
         <button class="btn small" id="icClear" type="button" hidden>結果を消す</button>
       </div>
-      <p class="hint">manaca・Suica・PASMO・ICOCA などの交通系ICカードを、端末の背面にタッチしてください。読み取った内容はこの画面に表示するだけで、保存も送信もしません。</p>
+      <p class="hint">manaca・Suica・PASMO・ICOCA などの交通系ICカードを読めます。「読み取る」を押してから、カードを端末の背面にタッチしてください。読み取った内容はこの画面に表示するだけで、保存も送信もしません。</p>
     </section>
     <section class="card elev" id="icRes" hidden aria-label="読み取り結果">
       <div class="icbal"><div class="k">残高</div><div class="v" id="icBal"></div></div>
@@ -5713,7 +5714,7 @@ var NEWS=[
   {v:"5.9", d:"2026-09-29", items:[
     "画面左上にメニュー（≡）を追加しました。",
     "設定をメニューへ移しました（下のタブは「ルート・時刻表・発車標・地図」の4つになりました）。",
-    "ICカード：manaca・Suica などの交通系ICカードをスマホにタッチすると、残高と利用履歴（日付・区間・金額）を見られます。読み取った内容は保存も送信もしません。NFC対応の端末のみ。",
+    "ICカード：manaca・Suica などの交通系ICカードをスマホにタッチ（「読み取る」ボタンを押してから）すると、残高と利用履歴（日付・区間・金額）を見られます。読み取った内容は保存も送信もしません。NFC対応の端末のみ。",
     "要望メッセージ：不具合の報告や改善の要望を、アプリの中から開発者に送れます（通信が必要です。返信はできません）。",
     "更新情報：この画面です。"
   ]},
@@ -5902,7 +5903,10 @@ var IC_PROC={1:"運賃支払",2:"チャージ",3:"券購入",4:"精算",5:"入�
   0x0D:"バス",0x0F:"バス",0x13:"新幹線利用",0x14:"オートチャージ",0x15:"オートチャージ",0x1F:"バスチャージ",
   0x46:"物販",0x49:"入金",0x4A:"物販取消",0x4B:"入場物販",0xC6:"物販"};
 var IC_NOSTN={0x0D:1,0x0F:1,0x1F:1,0x46:1,0x49:1,0x4A:1,0x4B:1,0xC6:1,2:1,7:1,8:1};
-var icOn=false, icShown=false;
+/* 読み取りは「読み取る」ボタンを押したときだけ待つ（ページを開いただけでは待たない）。
+   押してから IC_TIMEOUT の間だけ待ち、読めたら／キャンセル／時間切れ／ページを離れたら止める。 */
+var icOn=false, icShown=false, icTimer=0;
+var IC_TIMEOUT=30000;
 function hex2(n){ return ("0"+(n&255).toString(16)).slice(-2).toUpperCase(); }
 function yen(n){ return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,","); }
 function icSet(msg,cls){
@@ -5910,24 +5914,47 @@ function icSet(msg,cls){
   var p=$("icPulse"); p.className="icpulse"+(cls?" "+cls:""); p.innerHTML=IC.nfc;
 }
 function icBridge(){ return window.Android; }
-function icStart(){
+/* NFC が使えるか。使えないときは理由を出して false */
+function icCheck(){
   var A=icBridge();
   $("icNfcSet").hidden=true;
-  if(!A){ icSet("この機能はアプリ版で使えます。","err"); return; }
-  if(!A.nfcState){ icSet("ICカードの読み取りには、新しいアプリ本体（v5.9以降）が必要です。設定の「アプリとデータの更新」から確認してください。","err"); return; }
+  if(!A){ icSet("この機能はアプリ版で使えます。","err"); return false; }
+  if(!A.nfcState){ icSet("ICカードの読み取りには、新しいアプリ本体（v5.9以降）が必要です。設定の「アプリとデータの更新」から確認してください。","err"); return false; }
   var s="none"; try{ s=A.nfcState(); }catch(e){}
-  if(s==="none"){ icSet("この端末にはNFCがないため、読み取れません。","err"); return; }
-  if(s==="off"){ icSet("NFCがオフです。NFCをオンにしてから、もう一度開いてください。","err"); $("icNfcSet").hidden=false; return; }
-  try{ A.nfcStart(); icOn=true; }catch(e){ icSet("NFCを開始できませんでした。","err"); return; }
-  icSet(icShown?"読み取りました。もう一度タッチすると更新します。":"カードをスマホの背面にタッチしてください。","on");
+  if(s==="none"){ icSet("この端末にはNFCがないため、読み取れません。","err"); return false; }
+  if(s==="off"){ icSet("NFCがオフです。NFCをオンにしてから、もう一度開いてください。","err"); $("icNfcSet").hidden=false; return false; }
+  return true;
 }
-function icStop(){
+/* 読み取りの待ちを止める（ボタン表示は変えない） */
+function icHalt(){
+  clearTimeout(icTimer); icTimer=0;
   if(!icOn) return;
   icOn=false;
   try{ icBridge().nfcStop(); }catch(e){}
 }
-/* showPane から。Card ページを開いている間だけ読み取りを待つ */
-function icPane(on){ if(on) icStart(); else icStop(); }
+/* 待機状態：「読み取る」ボタンを出す */
+function icIdle(msg,cls){
+  icHalt();
+  var b=$("icRead");
+  if(!icCheck()){ b.hidden=true; return; }
+  b.hidden=false; b.className="btn filled";
+  b.textContent=icShown?"もう一度読み取る":"カードを読み取る";
+  icSet(msg||"「カードを読み取る」を押してから、ICカードをスマホの背面にタッチしてください。",cls||"");
+}
+/* 読み取り待ち */
+function icScan(){
+  if(!icCheck()){ $("icRead").hidden=true; return; }
+  try{ icBridge().nfcStart(); icOn=true; }catch(e){ icSet("NFCを開始できませんでした。","err"); return; }
+  var b=$("icRead"); b.className="btn tonal"; b.textContent="キャンセル";
+  icSet("ICカードをスマホの背面にタッチしてください（"+Math.round(IC_TIMEOUT/1000)+"秒以内）。","on");
+  icTimer=setTimeout(function(){ icIdle("時間切れです。もう一度「読み取る」を押してください。","err"); },IC_TIMEOUT);
+}
+$("icRead").onclick=function(){
+  if(icOn) icIdle("キャンセルしました。");
+  else icScan();
+};
+/* showPane から。ページを開いたら待機状態に、離れたら待ちを止める */
+function icPane(on){ if(on) icIdle(); else icHalt(); }
 function icStName(area,ln,st){
   var T=window.RAIL_IC_STATIONS;
   var v=T && T[area.toString(16).toUpperCase()+":"+hex2(ln)+":"+hex2(st)];
@@ -5940,10 +5967,11 @@ function icOwner(a,b){
   return (x&&y&&x!==y)?x+" → "+y:(x||y);
 }
 function icRender(o){
-  if(!o.ok){ icSet(o.err||"読み取れませんでした。もう一度タッチしてください。","err"); return; }
+  /* 読めなかったときは待ちを続ける（時間内ならタッチし直せる） */
+  if(!o.ok){ icSet(o.err||"読み取れませんでした。もう一度タッチしてください。","on"); return; }
   var rows=o.rows||[];
   icShown=true;
-  icSet("読み取りました。もう一度タッチすると更新します。","on");
+  icIdle("読み取りました。もう一度読むときは「もう一度読み取る」を押してください。");
   $("icClear").hidden=false;
   $("icRes").hidden=false;
   $("icBal").innerHTML = rows.length ? yen(rows[0].bal)+'<small>円</small>' : "–";
@@ -5974,11 +6002,12 @@ function icRender(o){
 window.icResult=function(o){ try{ icRender(o); }catch(e){ icSet("表示できませんでした。","err"); } };
 $("icClear").onclick=function(){
   $("icRes").hidden=true; $("icClear").hidden=true; $("icList").innerHTML=""; icShown=false;
-  if(icOn) icSet("カードをスマホの背面にタッチしてください。","on");
+  if(!icOn) icIdle();
 };
 $("icNfcSet").onclick=function(){ try{ icBridge().openNfcSettings(); }catch(e){} };
+/* NFC の設定を直して戻ってきたとき、使えるようになっていたら「読み取る」を出す */
 document.addEventListener("visibilitychange",function(){
-  if(!document.hidden && pane==="Card") icStart();
+  if(!document.hidden && pane==="Card" && !icOn && $("icRead").hidden) icIdle();
 });
 icSet("","");
 

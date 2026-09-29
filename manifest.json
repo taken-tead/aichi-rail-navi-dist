@@ -1,15 +1,15 @@
 {
  "schema": 1,
- "generated": "2026-09-29T13:34:10+00:00",
+ "generated": "2026-09-29T13:49:14+00:00",
  "web": {
-  "version": "20260929T133410Z",
+  "version": "20260929T134914Z",
   "minApp": 41,
   "base": "web/",
   "files": [
    {
     "path": "index.html",
-    "sha256": "c47829c69320d947e05fb4ee83ebcc337ff43747ebd258f8af911ef95e185a20",
-    "size": 359930
+    "sha256": "3b180ff03d1d6ebed719d79a4b65af268b907a2581606d9b6cc4d7b0e961101c",
+    "size": 361718
    },
    {
     "path": "data/geo.js",
