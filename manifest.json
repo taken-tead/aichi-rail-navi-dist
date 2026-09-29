@@ -1,0 +1,43 @@
+{
+ "schema": 1,
+ "generated": "2026-09-29T12:10:10+00:00",
+ "web": {
+  "version": "20260929T121010Z",
+  "minApp": 40,
+  "base": "web/",
+  "files": [
+   {
+    "path": "index.html",
+    "sha256": "2c675d1fbb569e1c63b3ca47affac96be6a080df4941d6703fe1c70c43413e99",
+    "size": 332131
+   },
+   {
+    "path": "data/geo.js",
+    "sha256": "1dfcef3cc26a8a0ce54d531049c903311a5825e185d257302a2b4afca36c57ea",
+    "size": 72156
+   },
+   {
+    "path": "data/map.js",
+    "sha256": "4b6f9a3d4f70c744e374cb0114660adde8df44171992ae128fe5763106375453",
+    "size": 21710
+   },
+   {
+    "path": "data/tt_NH.js",
+    "sha256": "5192e352cd412185eb22e4b4bbe0c67c95c8adbd2f9abd6a8a462a36380d3017",
+    "size": 190680
+   },
+   {
+    "path": "data/tt_SUB.js",
+    "sha256": "0ed9e0ce9a35c08a51839ba3745092a3a4828018a8d7131f5fc1cc6ee6cafdd7",
+    "size": 17340
+   }
+  ]
+ },
+ "apk": {
+  "versionCode": 40,
+  "versionName": "5.8",
+  "url": "https://github.com/taken-tead/aichi-rail-navi-dist/releases/download/v40/aichi-rail-navi.apk",
+  "sha256": "259b75c26ccc14ec3e0b544e270295d0d76db92afefb2b4b4dc9b3866bebba93",
+  "size": 1316614
+ }
+}
