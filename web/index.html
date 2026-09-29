@@ -1179,7 +1179,7 @@ body.mapfull .navbar{display:none}
       </div>
     </div>
     <button class="addbtn" id="boardAddBtn" type="button">＋ 駅と方面を追加</button>
-    <p class="mapnote">時刻表タブの「☆登録」と同じ一覧です。行をタップすると停車駅が見られます（名鉄のみ）。</p>
+    <p class="mapnote">時刻表タブの「☆登録」と同じ一覧です。行をタップすると、その列車のこの先の各駅の時刻が見られます（地下鉄は推定）。</p>
   </section>
 
   <section class="pane" id="paneMap" hidden>
@@ -1415,7 +1415,7 @@ body.mapfull .navbar{display:none}
       <ul>
         <li>駅名をタップ → <b>目的駅</b>／行の右の「現」→ <b>現在駅</b>。地図・路線図の駅をタップしても目的駅になります。</li>
         <li><b>時刻表（名鉄）</b>：名鉄「路線別時刻表（名古屋本線）」2026年3月14日改正のPDFから起こした、豊橋〜木曽川堤 全55駅・上下・平日/土休日の全列車（約1,650本）です。種別・行先・各駅の発車時刻を収録しています。</li>
-        <li><b>時刻表（地下鉄）</b>：名古屋市交通局の駅別時刻表（公式）から、東山線・名城線・名港線・鶴舞線・桜通線・上飯田線の全87駅・上下・平日/土休日の発車時刻（延べ約63,000件）を収録しています。年末年始・終夜のダイヤは含みません。</li>
+        <li><b>時刻表（地下鉄）</b>：名古屋市交通局の駅別時刻表（公式）から、東山線・名城線・名港線・鶴舞線・桜通線・上飯田線の全87駅・上下・平日/土休日の発車時刻（延べ約63,000件）を収録しています。年末年始・終夜のダイヤは含みません。発車時刻をタップすると、その列車のこの先の各駅の時刻が見られます（公式の時刻表には列車ごとの時刻が無いため、隣り駅の発車時刻を突き合わせた推定で、終着の到着は概算です）。</li>
       <li><b>発車の目安は時刻表ではありません。</b>公表されている運転間隔と毎時本数から「およそ何分間隔か」を出しています。地下鉄の間隔は「まるはち交通」掲載の基本ダイヤ、名鉄の毎時本数はWikipedia「名鉄名古屋本線」運行形態（2023年3月18日改正）に基づき、普通列車の本数・早朝夜間・名鉄の朝夕増発は推定（△印）です。祝日は判定していません。</li>
         <li>種別バッジは名古屋本線のみ。<b>快特</b>＝快速特急、うすい表示は一部列車のみ停車。地下鉄は全列車が各駅停車。</li>
         <li>名城線は環状線。目的駅までの向きは近いほうを自動で選びます。</li>
@@ -2513,7 +2513,38 @@ function subList(c,d,holiday){
     });
   });
   out.sort(function(a,b){ return svcOf(a.m)-svcOf(b.m); });
+  out.forEach(function(e,i){ e.i=i; });   /* 並び順の添字（列車追跡 subTrain が使う） */
   return out;
+}
+var SUBIX={};
+function subL(c,d,hd){ var k=c+"|"+d+(hd?"h":"w"); return SUBIX[k]||(SUBIX[k]=subList(c,d,hd)); }
+/* 地下鉄：ある駅・向きの i 番目の発車の列車を、この先の駅までたどる。
+   公式の駅別時刻表に列車番号は無いので、SUB.lk（隣り駅の発車との対応。tools/link_nagoya_subway.py が作る）をたどる。
+   戻り値 {dest, stops:[{c,m,arr}], tail}。tail = "end"（終着まで）| "out"（地下鉄の外へ直通）| "loop"（環状を周回） */
+function subTrain(code,dir,hd,i){
+  if(!SUB || !SUB.lk) return null;
+  var day=hd?"hd":"wd", key=subKey(code,dir), stops=[], seen={}, tail="out", first=null;
+  seen[key]=1;
+  for(var n=0;n<60;n++){
+    var p=key.indexOf("|"), c=key.slice(0,p), d=+key.slice(p+1);
+    var e=subL(c,d,hd)[i], runs=SUB.lk[key] && SUB.lk[key][day];
+    if(!e || !runs) break;
+    if(!first) first=e;
+    /* 金山の名城線⇄名港線のように、同じ駅で駅コードだけ替わる場合は 1 行にまとめる */
+    if(!stops.length || byCode(stops[stops.length-1].c).n!==byCode(c).n) stops.push({c:c,m:e.m,arr:false});
+    var r=null;
+    for(var x=0;x<runs.length;x+=3){ if(runs[x]<=i) r=x; else break; }
+    var tg=runs[r+1];
+    if(tg==="-"){ tail="out"; break; }
+    if(tg.charAt(0)==="!"){
+      var run=Math.max(1, Math.round((SUB.dt&&SUB.dt[key]||2)-0.5));   /* 終着の到着は、隣り駅までの発車間隔から概算 */
+      stops.push({c:tg.slice(1),m:e.m+run,arr:true}); tail="end"; break;
+    }
+    key=tg; i+=runs[r+2];
+    if(seen[key]){ tail="loop"; break; }
+    seen[key]=1;
+  }
+  return first ? {dest:first.dl, stops:stops, tail:tail} : null;
 }
 /* 表示用（名鉄は index、地下鉄は文字列） */
 function eDest(e){ return e.ty>=0 ? deName(e.de) : (e.dl||""); }
@@ -4447,7 +4478,7 @@ function renderTT(){
     var past = live && svcMin(Math.floor(e.m/60)%24, e.m%60)<cur;
     var mins = Math.round((toMs(e.m)-Date.now())/60000);
     return '<button class="ttli'+(past?" past":"")+(!past&&mins<=5?" soon":"")+'" type="button"'+
-      (e.ty>=0?' data-ttrain="'+e.t+'" data-ttp="'+e.p+'"':'')+'>'+
+      (e.ty>=0?' data-ttrain="'+e.t+'" data-ttp="'+e.p+'"':(e.sub?' data-ttsub="'+e.i+'"':''))+'>'+
       '<span class="bg" style="--tc:'+col+'">'+tyn+'</span>'+
       '<span class="de">'+dn+'</span>'+
       '<span class="tm">'+hhmm(e.m)+'</span>'+
@@ -4500,7 +4531,8 @@ function renderBoard(){
       var col = x.e && x.e.ty>=0 ? (TYC[x.e.ty]||"#9AA4B0") : lc;
       var de = TTSHORT[x.dest]||x.dest;
       return '<button class="brow'+(mins<=2?' soon':'')+'" type="button"'+
-        (x.e && x.e.ty>=0 ? ' data-brd="'+i+'" data-btr="'+x.e.t+'" data-btp="'+x.e.p+'"' : '')+'>'+
+        (x.e && x.e.ty>=0 ? ' data-brd="'+i+'" data-btr="'+x.e.t+'" data-btp="'+x.e.p+'"'
+          : (x.e && x.e.sub ? ' data-brd="'+i+'" data-bsub="'+x.e.i+'"' : ''))+'>'+
         '<span class="ty" style="--tc:'+col+'">'+ty+'</span>'+
         '<span class="de">'+de.replace("名鉄","")+'</span>'+
         '<span class="tm"><b>'+x.hm+'</b><i>'+(mins<=0?"まもなく":"あと"+mins+"分")+'</i></span></button>';
@@ -4719,6 +4751,26 @@ function dsCand(day,dir,c,fromSi,toSi){
 }
 function dsFor(day,dir,c,fromSi,toSi){
   return dsCand(day,dir,c,fromSi,toSi);
+}
+/* 地下鉄：1本の列車のこの先の各駅（発車は公式の時刻表、この先は隣り駅の発車から追跡した推定） */
+function dsSubTrain(code,dir,hd,i){
+  var T=subTrain(code,dir,hd,i);
+  if(!T) return '<div class="dshd">この列車の情報がありません</div>';
+  var col=LINES[IDX[code].li].color, loopy=(T.dest==="右回り"||T.dest==="左回り");
+  var h='<div class="dshd"><span class="dsty" style="--tc:'+col+'">各停</span>'+
+        (loopy?'名城線 '+T.dest:T.dest+'行')+'</div>';
+  h+='<div style="position:relative"><div class="dsline"></div>';
+  T.stops.forEach(function(x,k){
+    var tag = k===0 ? '<span class="dstag">乗車</span>'
+            : (st.to && byCode(st.to).n===byCode(x.c).n ? '<span class="dstag">降車</span>' : '');
+    h+='<div class="dsrow'+(k===0||tag?" on":"")+'"><span class="tm">'+hhmm(x.m)+(x.arr?'着':'発')+'</span>'+
+       '<span class="dot"></span><span class="nm">'+byCode(x.c).n+'</span>'+tag+'</div>';
+  });
+  h+='</div>';
+  var note = T.tail==="out" ? '<p class="mapnote">この先は地下鉄の外へ直通します（'+T.dest+'行）。</p>'
+           : T.tail==="loop" ? '<p class="mapnote">環状線のため、この先も周回します。</p>' : '';
+  return h+note+'<p class="mapnote">各駅は発車時刻です。この先の時刻は、公式の駅別時刻表の隣り駅の発車どうしを突き合わせて求めた推定で、'+
+         '終着の到着時刻は概算です。</p>';
 }
 
 /* ---------- 発車の目安 ---------- */
@@ -5200,7 +5252,7 @@ function scrollToCurrent(){var el=document.querySelector(".row.cur");if(el&&el.s
 
 /* ---------- events ---------- */
 document.addEventListener("click",function(e){
-  var el=e.target.closest?e.target.closest("[data-accm],[data-accp],[data-pvn],[data-pvl],[data-cmp],[data-vgs],[data-vgv],[data-vge],[data-vgload],[data-dict],[data-dsave],[data-ddel],[data-dtry],[data-vg],[data-vgt],[data-vgstop],[data-viapick],[data-viaup],[data-viadn],[data-viadel],[data-bup],[data-bdn],[data-brd],[data-bdel],[data-bdir],[data-alarm],[data-rview],[data-rideset],[data-mview],[data-ttview],[data-mgrp],[data-qmode],[data-qsort],[data-ttfav],[data-ttfdel],[data-ttfedit],[data-ttrain],[data-cand],[data-ttdir],[data-ttday],[data-ttonly],[data-li],[data-to],[data-from],[data-pick],[data-delpass],[data-fdir],[data-day],[data-fav],[data-delfav],[data-pane],[data-theme],[data-notify],[data-rtype],[data-ttdep],[data-favup],[data-favdn],[data-favren]"):null;
+  var el=e.target.closest?e.target.closest("[data-accm],[data-accp],[data-pvn],[data-pvl],[data-cmp],[data-vgs],[data-vgv],[data-vge],[data-vgload],[data-dict],[data-dsave],[data-ddel],[data-dtry],[data-vg],[data-vgt],[data-vgstop],[data-viapick],[data-viaup],[data-viadn],[data-viadel],[data-bup],[data-bdn],[data-brd],[data-bdel],[data-bdir],[data-alarm],[data-rview],[data-rideset],[data-mview],[data-ttview],[data-mgrp],[data-qmode],[data-qsort],[data-ttfav],[data-ttfdel],[data-ttfedit],[data-ttsub],[data-ttrain],[data-cand],[data-ttdir],[data-ttday],[data-ttonly],[data-li],[data-to],[data-from],[data-pick],[data-delpass],[data-fdir],[data-day],[data-fav],[data-delfav],[data-pane],[data-theme],[data-notify],[data-rtype],[data-ttdep],[data-favup],[data-favdn],[data-favren]"):null;
   if(!el) return;
   if(el.hasAttribute("data-ttdep")){
     var ms=parseHM(el.getAttribute("data-ttdep"));
@@ -5223,6 +5275,10 @@ document.addEventListener("click",function(e){
   if(el.hasAttribute("data-ttfav")){
     var f=st.ttfav[+el.getAttribute("data-ttfav")];
     if(f){ ttCode=f.c; ttDir=f.d; renderTT(); ttJumpNow(); }
+    return;
+  }
+  if(el.hasAttribute("data-ttsub")){
+    dsOpen(dsSubTrain(ttCode,ttDir,ttDay==="hd",+el.getAttribute("data-ttsub")), byCode(ttCode).n+" 発の停車駅");
     return;
   }
   if(el.hasAttribute("data-ttrain")){
@@ -5327,6 +5383,10 @@ document.addEventListener("click",function(e){
   if(el.hasAttribute("data-brd")){
     var fi=+el.getAttribute("data-brd"), f=st.ttfav[fi];
     var day=(freqDay?(freqDay==="hd"?"hd":"wd"):(dayKind(new Date()).hd?"hd":"wd"));
+    if(el.hasAttribute("data-bsub")){
+      dsOpen(dsSubTrain(f.c,f.d,day==="hd",+el.getAttribute("data-bsub")), byCode(f.c).n+" 発の停車駅");
+      return;
+    }
     var tsi=(st.to&&IDX[st.to]&&IDX[st.to].li===NHLI)?IDX[st.to].si:-1;
     dsOpen(dsTrain(day, f.d, +el.getAttribute("data-btr"), IDX[f.c].si, tsi), byCode(f.c).n+" 発の停車駅");
     return;
