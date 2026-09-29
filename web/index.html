@@ -392,7 +392,7 @@ svg{display:block;fill:currentColor}
 
 /* ===== panes & bottom navigation ===== */
 .pane[hidden]{display:none!important}
-.navbar{flex:none;position:fixed;left:0;right:0;bottom:0;max-width:600px;margin:0 auto;z-index:40;display:grid;grid-template-columns:repeat(5,1fr);
+.navbar{flex:none;position:fixed;left:0;right:0;bottom:0;max-width:600px;margin:0 auto;z-index:40;display:grid;grid-template-columns:repeat(4,1fr);
   background:var(--s-1);border-top:1px solid var(--outline-variant);
   padding:10px 4px calc(10px + env(safe-area-inset-bottom,0px));gap:2px}
 .navitem{appearance:none;border:0;background:none;font:inherit;cursor:pointer;color:var(--on-surface-variant);
@@ -948,12 +948,77 @@ body.mapfull .navbar{display:none}
 .dictedit .dh{justify-content:flex-start}
 .dictedit .dh .dclose{margin-left:auto}
 
+/* ===== ハンバーガーメニュー・ICカード・要望・更新情報 ===== */
+.topbar{gap:4px;padding-left:8px}
+.topbar .ttl{padding-left:4px}
+.drawer{position:fixed;inset:0;z-index:70;background:var(--scrim)}
+.drawer[hidden]{display:none!important}
+.drawerin{position:absolute;left:0;top:0;bottom:0;width:min(320px,84vw);background:var(--s-low);
+  box-shadow:var(--e3);border-radius:0 var(--r-l) var(--r-l) 0;padding:0 12px calc(16px + env(safe-area-inset-bottom,0px));
+  display:flex;flex-direction:column;gap:4px;overflow-y:auto;animation:drawerIn .22s var(--emph,ease-out)}
+@keyframes drawerIn{from{transform:translateX(-100%)}to{transform:none}}
+@media (prefers-reduced-motion:reduce){.drawerin{animation:none}}
+.drawerhd{padding:26px 12px 16px}
+.drawerhd .dt{font-size:20px;line-height:26px;font-weight:800;letter-spacing:-.3px}
+.drawerhd .dv{font-size:12px;line-height:17px;color:var(--on-surface-variant);margin-top:2px}
+.mitem{appearance:none;border:0;background:none;font:inherit;color:var(--on-surface);cursor:pointer;text-align:left;
+  display:flex;align-items:center;gap:16px;min-height:56px;padding:8px 16px;border-radius:999px;position:relative;overflow:hidden}
+.mitem::after{content:"";position:absolute;inset:0;background:currentColor;opacity:0;transition:opacity .12s}
+.mitem:hover::after{opacity:.08}.mitem:active::after{opacity:.12}
+.mitem:focus-visible{outline:3px solid var(--primary);outline-offset:-3px}
+.mitem .mi{flex:none;width:24px;height:24px;color:var(--on-surface-variant)}
+.mitem .mi svg{width:24px;height:24px}
+.mitem .mt{display:flex;flex-direction:column;font-size:15px;line-height:20px;font-weight:700;min-width:0}
+.mitem .mt small{font-size:11.5px;line-height:16px;font-weight:500;color:var(--on-surface-variant)}
+
+.icstat{display:flex;align-items:center;gap:14px;padding:6px 16px 4px}
+.icpulse{flex:none;width:48px;height:48px;border-radius:50%;background:var(--primary-container);color:var(--on-primary-container);
+  display:flex;align-items:center;justify-content:center}
+.icpulse svg{width:26px;height:26px}
+.icpulse.on{animation:icPulse 1.6s ease-in-out infinite}
+.icpulse.err{background:var(--error-container);color:var(--on-error-container)}
+@keyframes icPulse{0%,100%{box-shadow:0 0 0 0 rgba(47,91,208,.35)}50%{box-shadow:0 0 0 10px rgba(47,91,208,0)}}
+@media (prefers-reduced-motion:reduce){.icpulse.on{animation:none}}
+.ictxt{font-size:14px;line-height:20px;font-weight:600;min-width:0}
+.icbal{padding:16px 16px 4px}
+.icbal .k{font-size:12px;font-weight:700;color:var(--on-surface-variant);letter-spacing:.4px}
+.icbal .v{font-size:32px;line-height:40px;font-weight:800}
+.icbal .v small{font-size:15px;font-weight:700;margin-left:2px}
+.ich{display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:10px 16px;border-top:1px solid var(--outline-variant)}
+.ich:first-child{border-top:0}
+.ich .d{font-size:12px;color:var(--on-surface-variant);font-weight:600}
+.ich .p{font-size:14.5px;font-weight:700;line-height:20px;min-width:0;overflow-wrap:anywhere}
+.ich .p .arw{opacity:.55;margin:0 4px}
+.ich .a{grid-row:1/span 3;grid-column:2;text-align:right;align-self:center;font-size:15px;font-weight:800}
+.ich .a.plus{color:var(--success)}
+.ich .a small{display:block;font-size:11px;font-weight:600;color:var(--on-surface-variant)}
+.ich .code{font-size:11px;color:var(--on-surface-variant);font-weight:500}
+
+.newsbody{padding:2px 16px 18px}
+.nv{padding:12px 0;border-top:1px solid var(--outline-variant)}
+.nv:first-child{border-top:0}
+.nv h3{margin:0 0 6px;font-size:15px;line-height:22px;font-weight:800;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.nv h3 .nd{font-size:11.5px;font-weight:600;color:var(--on-surface-variant)}
+.nv h3 .cur{font-size:10.5px;font-weight:800;background:var(--primary);color:var(--on-primary);padding:1px 8px;border-radius:999px}
+.nv ul{margin:0;padding-left:20px;font-size:13.5px;line-height:20px}
+.nv li{margin:3px 0}
+.fbbody{padding:2px 0 18px}
+.fbbody textarea{display:block;width:calc(100% - 32px);margin:10px 16px 0;padding:12px 14px;font:inherit;font-size:15px;line-height:22px;
+  color:var(--on-surface);background:var(--surface);border:1px solid var(--outline);border-radius:var(--r-s);resize:vertical;min-height:120px}
+.fbbody textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 1px var(--primary)}
+.fbatt{display:flex;align-items:center;gap:10px;padding:12px 16px 4px;font-size:13px;font-weight:600}
+.fbatt input{width:20px;height:20px;accent-color:var(--primary);flex:none}
+.fbbody .hint{padding-top:6px}
+.fbinfo{display:flex;align-items:center;gap:10px;margin:12px 16px 0;padding:8px 8px 8px 14px;border-radius:var(--r-s);background:var(--s-high)}
+.fbinfot{flex:1;min-width:0;font-size:12.5px;line-height:18px;color:var(--on-surface-variant);overflow-wrap:anywhere;user-select:text;-webkit-user-select:text}
+
 </style>
 </head>
 <body>
 <div class="app">
 
   <header class="topbar">
+    <button class="btn icon" id="menuBtn" type="button" aria-label="メニューを開く" aria-haspopup="true" aria-expanded="false"></button>
     <div class="ttl">あいち鉄道ナビ<span class="sub" id="topSub">名鉄・名古屋市営地下鉄</span></div>
     <button class="btn icon" id="themeBtn" type="button" aria-label="表示テーマを切り替え"></button>
   </header>
@@ -1167,6 +1232,28 @@ body.mapfull .navbar{display:none}
     </div>
   </section>
 
+  <!-- ============ ICカード ============ -->
+  <section class="pane" id="paneCard" hidden>
+    <section class="card elev" aria-label="ICカードの読み取り">
+      <div class="cardhd"><h2>交通系ICカード</h2></div>
+      <div class="icstat" id="icStat" aria-live="polite">
+        <div class="icpulse" id="icPulse"></div>
+        <div class="ictxt" id="icMsg"></div>
+      </div>
+      <div class="vgacts">
+        <button class="btn tonal small" id="icNfcSet" type="button" hidden>NFCの設定を開く</button>
+        <button class="btn small" id="icClear" type="button" hidden>結果を消す</button>
+      </div>
+      <p class="hint">manaca・Suica・PASMO・ICOCA などの交通系ICカードを、端末の背面にタッチしてください。読み取った内容はこの画面に表示するだけで、保存も送信もしません。</p>
+    </section>
+    <section class="card elev" id="icRes" hidden aria-label="読み取り結果">
+      <div class="icbal"><div class="k">残高</div><div class="v" id="icBal"></div></div>
+      <div class="cardhd"><h2>利用履歴（新しい順・最大20件）</h2></div>
+      <div id="icList"></div>
+      <p class="hint" id="icNote"></p>
+    </section>
+  </section>
+
   <!-- ============ 設定 ============ -->
   <section class="pane" id="paneSet" hidden>
     <section class="card" aria-label="定期券">
@@ -1310,6 +1397,7 @@ body.mapfull .navbar{display:none}
         <li>所要時間・到着予定は距離と停車数からの<b>概算</b>で、時刻表とはずれます。運賃は名鉄2024年3月16日改定・地下鉄現行の大人普通運賃（名鉄と地下鉄をまたぐ場合は単純合算、乗継割引なし）。</li>
         <li>駅座標・駅順・線形は station_database（ekidata / OpenStreetMap 由来）、営業キロは実線形への投影値を全線キロで補正した概算です。</li>
         <li>経路検索の対象は名鉄名古屋本線（愛知県内）と名古屋市営地下鉄6路線です。</li>
+        <li>ICカードの駅名は、交通系ICカードの駅コード表（IC SFCard Fan 氏の調査をもとにした soltia48/suica-viewer の station_codes.csv、MIT License）で引いています。有志による非公式のデータなので、載っていない駅や誤りがあることがあります。</li>
       </ul>
     </details>
   </section>
@@ -1321,8 +1409,55 @@ body.mapfull .navbar{display:none}
   <button class="navitem" type="button" data-pane="TT" role="tab" aria-selected="false"><span class="ni"></span><span class="nl">時刻表</span></button>
   <button class="navitem" type="button" data-pane="Board" role="tab" aria-selected="false"><span class="ni"></span><span class="nl">発車標</span></button>
   <button class="navitem" type="button" data-pane="Map" role="tab" aria-selected="false"><span class="ni"></span><span class="nl">地図</span></button>
-  <button class="navitem" type="button" data-pane="Set" role="tab" aria-selected="false"><span class="ni"></span><span class="nl">設定</span></button>
 </nav>
+
+<!-- ============ ハンバーガーメニュー（左から出るドロワー） ============ -->
+<div class="drawer" id="drawer" hidden>
+  <nav class="drawerin" role="menu" aria-label="メニュー">
+    <div class="drawerhd">
+      <div class="dt">あいち鉄道ナビ</div>
+      <div class="dv" id="drawerVer"></div>
+    </div>
+    <button class="mitem" type="button" role="menuitem" data-menu="set"><span class="mi" data-ic="navSet"></span><span class="mt">設定<small>定期券・表示・音声駅案内</small></span></button>
+    <button class="mitem" type="button" role="menuitem" data-menu="ic"><span class="mi" data-ic="card"></span><span class="mt">ICカード<small>タッチして利用履歴を見る</small></span></button>
+    <button class="mitem" type="button" role="menuitem" data-menu="fb"><span class="mi" data-ic="mail"></span><span class="mt">要望メッセージ<small>開発者に改善要望を送る</small></span></button>
+    <button class="mitem" type="button" role="menuitem" data-menu="news"><span class="mi" data-ic="info"></span><span class="mt">更新情報<small>最新版の変更内容</small></span></button>
+  </nav>
+</div>
+
+<div class="sheet" id="newsSheet" hidden>
+  <div class="sheetin" role="dialog" aria-modal="true" aria-label="更新情報">
+    <div class="grab"></div>
+    <div class="sheethd">
+      <strong>更新情報</strong>
+      <button class="btn icon" id="newsClose" type="button" aria-label="閉じる"></button>
+    </div>
+    <div class="dsbody newsbody" id="newsBody"></div>
+  </div>
+</div>
+
+<div class="sheet" id="fbSheet" hidden>
+  <div class="sheetin" role="dialog" aria-modal="true" aria-label="要望メッセージ">
+    <div class="grab"></div>
+    <div class="sheethd">
+      <strong>要望メッセージ</strong>
+      <button class="btn icon" id="fbClose" type="button" aria-label="閉じる"></button>
+    </div>
+    <div class="dsbody fbbody">
+      <div class="vgchips" id="fbCats" role="group" aria-label="種類"></div>
+      <textarea id="fbText" rows="6" maxlength="2000" placeholder="不具合・こうなったら嬉しい、などを自由に書いてください" aria-label="メッセージ"></textarea>
+      <div class="fbinfo">
+        <div class="fbinfot" id="fbInfo"></div>
+        <button class="btn small" id="fbCopy" type="button">コピー</button>
+      </div>
+      <label class="fbatt"><input type="checkbox" id="fbAttach" checked><span>上のバージョンと端末の情報も一緒に送る</span></label>
+      <p class="hint" id="fbNote"></p>
+      <div class="vgacts">
+        <button class="btn filled" id="fbSend" type="button">送信</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div class="sheet dsheet" id="dSheet" hidden>
   <div class="sheetin" role="dialog" aria-modal="true" aria-label="停車駅">
@@ -1659,6 +1794,7 @@ body.mapfull .navbar{display:none}
 <script src="data/geo.js"></script>
 <script src="data/tt_NH.js"></script>
 <script src="data/tt_SUB.js"></script>
+<script src="data/ic_st.js"></script>
 <script>
 function START(RAIL_DATA){
 "use strict";
@@ -3788,6 +3924,11 @@ var IC={
   navBoard:'<svg viewBox="0 0 24 24"><path d="M4 3h16a2 2 0 012 2v10a2 2 0 01-2 2h-5.5l.9 2H17v2H7v-2h1.6l.9-2H4a2 2 0 01-2-2V5a2 2 0 012-2zm0 2v10h16V5H4zm2 2h6v2H6V7zm0 4h5v2H6v-2zm9-4h3v6h-3V7z"/></svg>',
   navMap:'<svg viewBox="0 0 24 24"><path d="M20.5 3l-.16.03L15 5.1 9 3 3.38 4.9c-.23.07-.38.26-.38.5V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.62-1.9c.23-.07.38-.26.38-.5V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>',
   navLines:'<svg viewBox="0 0 24 24"><path d="M12 2c-4 0-8 .5-8 4v9.5C4 17.43 5.57 19 7.5 19L6 20.5v.5h12v-.5L16.5 19c1.93 0 3.5-1.57 3.5-3.5V6c0-3.5-3.58-4-8-4zM7.5 17c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zM11 10H6V6h5v4zm2 0V6h5v4h-5zm3.5 7c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>',
+  menu:'<svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>',
+  card:'<svg viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>',
+  mail:'<svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>',
+  info:'<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>',
+  nfc:'<svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 18H4V4h16v16zM18 6h-5c-1.1 0-2 .9-2 2v2.28c-.6.35-1 .98-1 1.72 0 1.1.9 2 2 2s2-.9 2-2c0-.74-.4-1.38-1-1.72V8h3v8H8V8h2V6H6v12h12V6z"/></svg>',
   navSet:'<svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.49.49 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54A.48.48 0 0013.9 2h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.71 8.47c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1115.6 12 3.6 3.6 0 0112 15.6z"/></svg>'
 };
 
@@ -4115,15 +4256,15 @@ function checkStop(){
 }
 
 /* ---------- タブ（ボトムナビ） ---------- */
-var PANES=["Route","TT","Board","Map","Set"];
-var PANE_SUB={Route:"名鉄・名古屋市営地下鉄",TT:"名鉄本線 全55駅＋地下鉄 全6路線",Board:"登録した駅の次の電車",Map:"地図・路線図・駅一覧",Set:"定期券と表示設定"};
+var PANES=["Route","TT","Board","Map","Set","Card"];
+var PANE_SUB={Route:"名鉄・名古屋市営地下鉄",TT:"名鉄本線 全55駅＋地下鉄 全6路線",Board:"登録した駅の次の電車",Map:"地図・路線図・駅一覧",Set:"定期券と表示設定",Card:"交通系ICカードの利用履歴"};
 var pane="Route";
 try{ var pv=localStorage.getItem("aichi-rail-pane"); if(PANES.indexOf(pv)>=0) pane=pv; }catch(e){}
 function showPane(p,noPush){
   if(PANES.indexOf(p)<0) p="Route";
   if(!noPush && p!=="Route" && pane==="Route" && typeof pushNav==="function") pushNav();
   pane=p;
-  try{ localStorage.setItem("aichi-rail-pane",p); }catch(e){}
+  if(p!=="Card"){ try{ localStorage.setItem("aichi-rail-pane",p); }catch(e){} }
   PANES.forEach(function(x){ $("pane"+x).hidden = (x!==p); });
   Array.prototype.forEach.call($("navbar").children,function(b){
     b.setAttribute("aria-selected", b.getAttribute("data-pane")===p);
@@ -4132,6 +4273,7 @@ function showPane(p,noPush){
   if(p==="Map"){ setTimeout(function(){ applyMView(); },0); }
   if(p==="Board") renderBoard();
   if(p==="TT"){ renderTT(); if(ttExpand) ttJumpNow(); }
+  if(typeof icPane==="function") icPane(p==="Card");
   window.scrollTo(0,0);
 }
 
@@ -5321,6 +5463,7 @@ try{ history.replaceState({d:0},""); }catch(e){}
 function pushNav(){ navDepth++; try{ history.pushState({d:navDepth},""); }catch(e){} }
 window.addEventListener("popstate",function(){
   if(navDepth>0) navDepth--;
+  if(typeof menuBack==="function" && menuBack()) return;
   if(!$("dSheet").hidden){ dsClose(); return; }
   if(!$("sheet").hidden){ passDraft.a=null; favDraft.a=null; closeSheet(); renderPasses(); return; }
   if(pane!=="Route"){ showPane("Route",true); }
@@ -5415,7 +5558,7 @@ function bindSheetDismiss(id, onClose){
   var body=inn.querySelector(".dsbody")||inn.querySelector(".sheetls");
   var y0=null, dy=0, active=false;
   function canStart(ev){
-    if(ev.target.closest && ev.target.closest("button,input,a")) return false;
+    if(ev.target.closest && ev.target.closest("button,input,textarea,select,a")) return false;
     if(grip && grip.contains(ev.target)) return true;
     if(head && head.contains(ev.target)) return true;
     if(body && body.contains(ev.target)) return body.scrollTop<=0;   /* 一番上なら本文からでも下げられる */
@@ -5559,6 +5702,285 @@ window.wgQueue=wgQueue;
 window.wgBuild=wgBuild;
 window.wgHolidays=wgHolidays;
 setTimeout(wgSync,1500);
+
+/* ---------- ハンバーガーメニュー（設定・ICカード・要望メッセージ・更新情報） ----------
+   ui.js の START() の末尾に差し込まれるので、$・showPane・pushNav・IC がそのまま使える。
+   戻るボタンは ui.js の popstate から menuBack() が呼ばれる。ドロワーもシートも開くたびに pushNav() し、
+   閉じるときは history.back() に一本化して、履歴の積み方がずれないようにしている。 */
+
+/* 更新情報。新しい版を先頭に足す（v は app/build.gradle の versionName に合わせる） */
+var NEWS=[
+  {v:"5.9", d:"2026-09-29", items:[
+    "画面左上にメニュー（≡）を追加しました。",
+    "設定をメニューへ移しました（下のタブは「ルート・時刻表・発車標・地図」の4つになりました）。",
+    "ICカード：manaca・Suica などの交通系ICカードをスマホにタッチすると、残高と利用履歴（日付・区間・金額）を見られます。読み取った内容は保存も送信もしません。NFC対応の端末のみ。",
+    "要望メッセージ：不具合の報告や改善の要望を、アプリの中から開発者に送れます（通信が必要です。返信はできません）。",
+    "更新情報：この画面です。"
+  ]},
+  {v:"5.8", d:"2026-09-29", items:[
+    "無線LANにつながったとき、画面とデータ、アプリ本体を自動で更新するようにしました。",
+    "名鉄の運賃を、公式の営業キロと運賃規則にそろえて計算するようにしました（最短経路で計算）。",
+    "名鉄の路線を追加し、名古屋本線を名鉄岐阜まで延ばしました。",
+    "名鉄公式サイトの駅情報（駅ナンバリング・読み・停車種別）を反映しました。"
+  ]}
+];
+
+var menuOpen=false, menuPending=null;
+
+function appInfo(){
+  var o={};
+  try{ if(window.Android && window.Android.updateInfo) o=JSON.parse(window.Android.updateInfo()); }catch(e){}
+  return o;
+}
+function copyText(t){
+  var ta=document.createElement("textarea");
+  ta.value=t; ta.style.position="fixed"; ta.style.opacity="0";
+  document.body.appendChild(ta); ta.select();
+  var ok=false; try{ ok=document.execCommand("copy"); }catch(e){}
+  document.body.removeChild(ta);
+  return ok;
+}
+
+/* ===== ドロワー ===== */
+function drawerShow(on){
+  menuOpen=on;
+  $("drawer").hidden=!on;
+  $("menuBtn").setAttribute("aria-expanded", on?"true":"false");
+}
+function drawerOpen(){
+  if(menuOpen) return;
+  var o=appInfo();
+  $("drawerVer").textContent = o.appName ? "バージョン "+o.appName : "";
+  drawerShow(true);
+  pushNav();
+  var f=$("drawer").querySelector(".mitem"); if(f) try{ f.focus(); }catch(e){}
+}
+/* ドロワーを閉じ、閉じ終わってから act を実行する（act 側で pushNav してよい） */
+function drawerGo(act){
+  menuPending=act||null;
+  try{ history.back(); }catch(e){}
+  setTimeout(function(){ if(menuOpen) menuBack(); },400);   /* 履歴が使えないときの保険 */
+}
+/* popstate から。何か閉じたら true */
+function menuBack(){
+  if(menuOpen){
+    drawerShow(false);
+    var f=menuPending; menuPending=null;
+    if(f) setTimeout(f,0);
+    return true;
+  }
+  if(!$("fbSheet").hidden){ $("fbSheet").hidden=true; return true; }
+  if(!$("newsSheet").hidden){ $("newsSheet").hidden=true; return true; }
+  return false;
+}
+var MENU_ACT={
+  set:function(){ showPane("Set"); },
+  ic:function(){ showPane("Card"); },
+  fb:function(){ fbOpen(); },
+  news:function(){ newsOpen(); }
+};
+$("menuBtn").innerHTML=IC.menu;
+Array.prototype.forEach.call(document.querySelectorAll("#drawer [data-ic]"),function(el){
+  el.innerHTML=IC[el.getAttribute("data-ic")]||"";
+});
+$("menuBtn").onclick=function(){ if(menuOpen) drawerGo(null); else drawerOpen(); };
+$("drawer").addEventListener("click",function(e){
+  if(e.target===this){ drawerGo(null); return; }
+  var b=e.target.closest&&e.target.closest("[data-menu]");
+  if(b) drawerGo(MENU_ACT[b.getAttribute("data-menu")]);
+});
+document.addEventListener("keydown",function(e){
+  if(e.key!=="Escape") return;
+  if(menuOpen) drawerGo(null);
+  else if(!$("fbSheet").hidden||!$("newsSheet").hidden) history.back();
+});
+
+/* ===== 更新情報 ===== */
+function newsOpen(){
+  var cur=appInfo().appName;
+  $("newsBody").innerHTML=NEWS.map(function(n){
+    return '<section class="nv"><h3>v'+n.v+'<span class="nd">'+n.d+'</span>'+
+      (cur===n.v?'<span class="cur">いまの版</span>':'')+'</h3><ul>'+
+      n.items.map(function(t){ return '<li>'+t+'</li>'; }).join("")+'</ul></section>';
+  }).join("");
+  $("newsSheet").hidden=false;
+  pushNav();
+}
+$("newsClose").innerHTML=IC.close;
+$("newsClose").onclick=function(){ history.back(); };
+bindSheetDismiss("newsSheet",function(){ history.back(); });
+
+/* ===== 要望メッセージ ===== */
+/* 送り先は Google フォーム（回答はスプレッドシートに溜まる）。フォームを作り直したら、ここだけ直す。
+   質問の文言・選択肢を変えると、下の entry と選択肢の文字列が合わなくなるので注意。 */
+var FB_FORM={
+  url:"https://docs.google.com/forms/d/e/1FAIpQLScEHW3Vm7X6avQ_jI2F1eX8hS7_h7nDPrwIAYjTe-qVYPZhSw/formResponse",
+  cat:"entry.189686006",   /* 種類（ラジオ。選択肢の文字は FB_CATS と一字一句同じ） */
+  msg:"entry.499599430",   /* メッセージ */
+  ver:"entry.823894757",   /* アプリのバージョン */
+  dev:"entry.1473091712"   /* 端末情報 */
+};
+var FB_CATS=["不具合","改善要望","路線・データ","その他"];
+var fbCat=1, fbBusy=false;
+function fbNote(t,err){
+  var n=$("fbNote"); n.textContent=t; n.classList.toggle("err",!!err);
+}
+function fbCatsRender(){
+  $("fbCats").innerHTML=FB_CATS.map(function(t,i){
+    return '<button class="ttfil" type="button" data-fbcat="'+i+'" aria-pressed="'+(i===fbCat)+'">'+t+'</button>';
+  }).join("");
+}
+/* 送るバージョンと端末の情報。画面にも同じものを見せる */
+function fbVer(){
+  var o=appInfo();
+  return o.appName ? o.appName+(o.appCode?"（"+o.appCode+"）":"") : "不明";
+}
+function fbDev(){
+  try{ if(window.Android && window.Android.deviceInfo) return window.Android.deviceInfo()||"不明"; }catch(e){}
+  return "不明";
+}
+function fbInfoText(){ return "あいち鉄道ナビ "+fbVer()+" ／ "+fbDev(); }
+function fbOpen(){
+  fbCatsRender();
+  $("fbInfo").textContent=fbInfoText();
+  fbNote("送信すると、入力した文章とバージョン・端末の情報が開発者のフォームに送られます（通信が必要です）。返信はできません。",false);
+  $("fbSheet").hidden=false;
+  pushNav();
+}
+$("fbClose").innerHTML=IC.close;
+$("fbClose").onclick=function(){ history.back(); };
+bindSheetDismiss("fbSheet",function(){ history.back(); });
+$("fbCats").addEventListener("click",function(e){
+  var b=e.target.closest&&e.target.closest("[data-fbcat]");
+  if(!b) return;
+  fbCat=+b.getAttribute("data-fbcat"); fbCatsRender();
+});
+$("fbCopy").onclick=function(){
+  var b=this;
+  b.textContent=copyText($("fbInfo").textContent)?"コピーしました":"長押しで選択";
+  setTimeout(function(){ b.textContent="コピー"; },2000);
+};
+function fbDone(ok){
+  fbBusy=false;
+  var b=$("fbSend"); b.disabled=false; b.textContent="送信";
+  if(ok){
+    $("fbText").value="";
+    fbNote("送りました。ありがとうございます！",false);
+  } else {
+    fbNote("送れませんでした。通信できる場所で、もう一度「送信」を押してください（入力した文章は残してあります）。",true);
+  }
+}
+/* アプリ本体（Java）が結果を返す */
+window.fbResult=function(ok){ fbDone(!!ok); };
+$("fbSend").onclick=function(){
+  if(fbBusy) return;
+  var t=$("fbText").value.trim();
+  if(!t){ fbNote("メッセージを入力してください。",true); return; }
+  var att=$("fbAttach").checked, P=[];
+  P.push([FB_FORM.cat,FB_CATS[fbCat]],[FB_FORM.msg,t]);
+  if(att){ P.push([FB_FORM.ver,fbVer()],[FB_FORM.dev,fbDev()]); }
+  var body=P.map(function(p){ return encodeURIComponent(p[0])+"="+encodeURIComponent(p[1]); }).join("&");
+  fbBusy=true;
+  var b=$("fbSend"); b.disabled=true; b.textContent="送信中…";
+  fbNote("送信しています…",false);
+  var A=window.Android;
+  if(A && A.postFeedback){
+    try{ A.postFeedback(FB_FORM.url,body); }catch(e){ fbDone(false); }
+    return;
+  }
+  /* 古いアプリ本体（postFeedback なし）：通信の成否は分かるが、フォーム側の受け付けまでは確かめられない */
+  try{
+    fetch(FB_FORM.url,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:body})
+      .then(function(){ fbDone(true); },function(){ fbDone(false); });
+  }catch(e){ fbDone(false); }
+};
+
+/* ===== ICカード ===== */
+/* 駅名の対応表は window.RAIL_IC_STATIONS（web/ic_stations.json。tools/gen_ic_stations.py で作る）。
+   {"地区:線区:駅順":"駅名|会社|路線"}（例 "1:81:3A"）。有志のデータなので、載っていない駅はコードのまま出す。 */
+var IC_PROC={1:"運賃支払",2:"チャージ",3:"券購入",4:"精算",5:"入場精算",6:"窓口出場",7:"新規発行",8:"窓口控除",
+  0x0D:"バス",0x0F:"バス",0x13:"新幹線利用",0x14:"オートチャージ",0x15:"オートチャージ",0x1F:"バスチャージ",
+  0x46:"物販",0x49:"入金",0x4A:"物販取消",0x4B:"入場物販",0xC6:"物販"};
+var IC_NOSTN={0x0D:1,0x0F:1,0x1F:1,0x46:1,0x49:1,0x4A:1,0x4B:1,0xC6:1,2:1,7:1,8:1};
+var icOn=false, icShown=false;
+function hex2(n){ return ("0"+(n&255).toString(16)).slice(-2).toUpperCase(); }
+function yen(n){ return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,","); }
+function icSet(msg,cls){
+  $("icMsg").textContent=msg;
+  var p=$("icPulse"); p.className="icpulse"+(cls?" "+cls:""); p.innerHTML=IC.nfc;
+}
+function icBridge(){ return window.Android; }
+function icStart(){
+  var A=icBridge();
+  $("icNfcSet").hidden=true;
+  if(!A){ icSet("この機能はアプリ版で使えます。","err"); return; }
+  if(!A.nfcState){ icSet("ICカードの読み取りには、新しいアプリ本体（v5.9以降）が必要です。設定の「アプリとデータの更新」から確認してください。","err"); return; }
+  var s="none"; try{ s=A.nfcState(); }catch(e){}
+  if(s==="none"){ icSet("この端末にはNFCがないため、読み取れません。","err"); return; }
+  if(s==="off"){ icSet("NFCがオフです。NFCをオンにしてから、もう一度開いてください。","err"); $("icNfcSet").hidden=false; return; }
+  try{ A.nfcStart(); icOn=true; }catch(e){ icSet("NFCを開始できませんでした。","err"); return; }
+  icSet(icShown?"読み取りました。もう一度タッチすると更新します。":"カードをスマホの背面にタッチしてください。","on");
+}
+function icStop(){
+  if(!icOn) return;
+  icOn=false;
+  try{ icBridge().nfcStop(); }catch(e){}
+}
+/* showPane から。Card ページを開いている間だけ読み取りを待つ */
+function icPane(on){ if(on) icStart(); else icStop(); }
+function icStName(area,ln,st){
+  var T=window.RAIL_IC_STATIONS;
+  var v=T && T[area.toString(16).toUpperCase()+":"+hex2(ln)+":"+hex2(st)];
+  if(v){ var p=v.split("|"); return {n:p[0],c:p[1],l:(p[2]||"").replace(/^\d+号線\s*/,""),known:true}; }
+  return {n:"線区"+hex2(ln)+"・駅"+hex2(st),c:"",l:"",known:false};
+}
+/* 会社・路線を駅名の下に小さく出す（入場と出場で同じなら1つだけ） */
+function icOwner(a,b){
+  var x=a.known?a.c+(a.l?" "+a.l:""):"", y=b&&b.known?b.c+(b.l?" "+b.l:""):"";
+  return (x&&y&&x!==y)?x+" → "+y:(x||y);
+}
+function icRender(o){
+  if(!o.ok){ icSet(o.err||"読み取れませんでした。もう一度タッチしてください。","err"); return; }
+  var rows=o.rows||[];
+  icShown=true;
+  icSet("読み取りました。もう一度タッチすると更新します。","on");
+  $("icClear").hidden=false;
+  $("icRes").hidden=false;
+  $("icBal").innerHTML = rows.length ? yen(rows[0].bal)+'<small>円</small>' : "–";
+  var unknown=false;
+  $("icList").innerHTML = rows.length ? rows.map(function(r,i){
+    var name=IC_PROC[r.p]||("処理 0x"+hex2(r.p));
+    var path="", own="";
+    if(!IC_NOSTN[r.p] && (r.l1||r.s1||r.l2||r.s2)){
+      /* 地域は byte15 の上位2ビットが入場側、次の2ビットが出場側 */
+      var a=icStName((r.reg>>6)&3,r.l1,r.s1), hasB=!!(r.l2||r.s2), b=hasB?icStName((r.reg>>4)&3,r.l2,r.s2):null;
+      if(!a.known||(b&&!b.known)) unknown=true;
+      path=a.n+(b?'<span class="arw">→</span>'+b.n:"");
+      own=icOwner(a,b);
+    }
+    var amt="";
+    if(i+1<rows.length){
+      var dv=r.bal-rows[i+1].bal;
+      amt='<div class="a'+(dv>0?' plus':'')+'">'+(dv>0?'+':dv<0?'−':'')+yen(Math.abs(dv))+'円<small>残高 '+yen(r.bal)+'円</small></div>';
+    } else {
+      amt='<div class="a"><small>残高 '+yen(r.bal)+'円</small></div>';
+    }
+    return '<div class="ich"><div class="d">'+r.y+'/'+r.m+'/'+r.d+'　'+name+'</div>'+
+      '<div class="p">'+(path||"&nbsp;")+'</div>'+(own?'<div class="code">'+own+'</div>':"")+amt+'</div>';
+  }).join("") : '<div class="empty">履歴がありません。</div>';
+  $("icNote").textContent = (unknown?"駅名の対応表にない駅は、線区コード・駅コードのまま表示しています。":"")+
+    "金額は、ひとつ前の履歴との残高の差です（いちばん古い1件は分かりません）。";
+}
+window.icResult=function(o){ try{ icRender(o); }catch(e){ icSet("表示できませんでした。","err"); } };
+$("icClear").onclick=function(){
+  $("icRes").hidden=true; $("icClear").hidden=true; $("icList").innerHTML=""; icShown=false;
+  if(icOn) icSet("カードをスマホの背面にタッチしてください。","on");
+};
+$("icNfcSet").onclick=function(){ try{ icBridge().openNfcSettings(); }catch(e){} };
+document.addEventListener("visibilitychange",function(){
+  if(!document.hidden && pane==="Card") icStart();
+});
+icSet("","");
 
 }
 (function(){
