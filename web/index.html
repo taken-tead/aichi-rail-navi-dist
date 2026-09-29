@@ -1143,6 +1143,7 @@ body.mapfull .navbar{display:none}
         <button class="btn tonal small" id="ttNow" type="button">今の時刻へ</button>
       </div>
       <div class="ttfavs" id="ttFavs"></div>
+      <div class="lines ttlines" role="tablist" id="ttLines" aria-label="路線"></div>
       <select class="ttselect" id="ttStation" aria-label="駅"></select>
       <div class="ttdirs" id="ttDirs" role="group" aria-label="方面"></div>
       <div class="tttop">
@@ -4437,10 +4438,14 @@ function renderTT(){
   var L=LINES[me.li];
   var byLine={};
   av.forEach(function(x){ (byLine[x.li]=byLine[x.li]||[]).push(x); });
-  $("ttStation").innerHTML = Object.keys(byLine).map(function(li){
-    return '<optgroup label="'+LINES[li].short+'">'+byLine[li].map(function(x){
-      return '<option value="'+x.c+'"'+(x.c===ttCode?' selected':'')+'>'+x.c+'　'+x.n+'</option>';
-    }).join("")+'</optgroup>';
+  /* 路線で絞ってから駅を選ぶ（駅の一覧は選択中の路線だけ） */
+  $("ttLines").innerHTML = Object.keys(byLine).map(function(li){
+    var Lx=LINES[li];
+    return '<button class="lchip" role="tab" type="button" data-ttline="'+li+'" aria-selected="'+(+li===me.li)+'" style="--c:'+Lx.color+'">'+
+           '<span class="mk">'+Lx.id+'</span>'+Lx.short+'</button>';
+  }).join("");
+  $("ttStation").innerHTML = byLine[me.li].map(function(x){
+    return '<option value="'+x.c+'"'+(x.c===ttCode?' selected':'')+'>'+x.c+'　'+x.n+'</option>';
   }).join("");
   var ds=ttDirs(ttCode);
   $("ttDirs").innerHTML = ds.map(function(d){
@@ -5252,7 +5257,7 @@ function scrollToCurrent(){var el=document.querySelector(".row.cur");if(el&&el.s
 
 /* ---------- events ---------- */
 document.addEventListener("click",function(e){
-  var el=e.target.closest?e.target.closest("[data-accm],[data-accp],[data-pvn],[data-pvl],[data-cmp],[data-vgs],[data-vgv],[data-vge],[data-vgload],[data-dict],[data-dsave],[data-ddel],[data-dtry],[data-vg],[data-vgt],[data-vgstop],[data-viapick],[data-viaup],[data-viadn],[data-viadel],[data-bup],[data-bdn],[data-brd],[data-bdel],[data-bdir],[data-alarm],[data-rview],[data-rideset],[data-mview],[data-ttview],[data-mgrp],[data-qmode],[data-qsort],[data-ttfav],[data-ttfdel],[data-ttfedit],[data-ttsub],[data-ttrain],[data-cand],[data-ttdir],[data-ttday],[data-ttonly],[data-li],[data-to],[data-from],[data-pick],[data-delpass],[data-fdir],[data-day],[data-fav],[data-delfav],[data-pane],[data-theme],[data-notify],[data-rtype],[data-ttdep],[data-favup],[data-favdn],[data-favren]"):null;
+  var el=e.target.closest?e.target.closest("[data-accm],[data-accp],[data-pvn],[data-pvl],[data-cmp],[data-vgs],[data-vgv],[data-vge],[data-vgload],[data-dict],[data-dsave],[data-ddel],[data-dtry],[data-vg],[data-vgt],[data-vgstop],[data-viapick],[data-viaup],[data-viadn],[data-viadel],[data-bup],[data-bdn],[data-brd],[data-bdel],[data-bdir],[data-alarm],[data-rview],[data-rideset],[data-mview],[data-ttview],[data-mgrp],[data-qmode],[data-qsort],[data-ttfav],[data-ttfdel],[data-ttfedit],[data-ttline],[data-ttsub],[data-ttrain],[data-cand],[data-ttdir],[data-ttday],[data-ttonly],[data-li],[data-to],[data-from],[data-pick],[data-delpass],[data-fdir],[data-day],[data-fav],[data-delfav],[data-pane],[data-theme],[data-notify],[data-rtype],[data-ttdep],[data-favup],[data-favdn],[data-favren]"):null;
   if(!el) return;
   if(el.hasAttribute("data-ttdep")){
     var ms=parseHM(el.getAttribute("data-ttdep"));
@@ -5275,6 +5280,14 @@ document.addEventListener("click",function(e){
   if(el.hasAttribute("data-ttfav")){
     var f=st.ttfav[+el.getAttribute("data-ttfav")];
     if(f){ ttCode=f.c; ttDir=f.d; renderTT(); ttJumpNow(); }
+    return;
+  }
+  if(el.hasAttribute("data-ttline")){
+    var tl=+el.getAttribute("data-ttline"), cand=ttAvail().filter(function(x){ return x.li===tl; });
+    if(!cand.length) return;
+    var pick=cand[0];                                   /* 現在駅がその路線にあればそこ、なければ路線の先頭 */
+    cand.forEach(function(x){ if(x.c===st.from) pick=x; });
+    ttCode=pick.c; ttDir=null; ttExpand=false; renderTT();
     return;
   }
   if(el.hasAttribute("data-ttsub")){
