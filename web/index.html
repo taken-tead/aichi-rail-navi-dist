@@ -6181,7 +6181,7 @@ function renderFavs(){
       var A=byCode(p.a), LA=LINES[A.li];
       var on=(st.from===p.a&&st.to===p.b)||(st.from===p.b&&st.to===p.a);
       var rev=on&&st.from===p.b;
-      var txt = p.t ? p.t : ((rev?byCode(p.b).n:A.n)+'<span class="ar">→</span>'+(rev?A.n:byCode(p.b).n));
+      var txt = p.t ? vgEsc(p.t) : ((rev?byCode(p.b).n:A.n)+'<span class="ar">→</span>'+(rev?A.n:byCode(p.b).n));
       return '<span class="fav" role="button" tabindex="0" data-fav="'+i+'" aria-pressed="'+on+'" style="--c:'+LA.color+'">'+
         '<i></i><span class="ab">'+txt+'</span>'+
         '<span class="favedit">'+
@@ -6196,7 +6196,7 @@ function renderFavs(){
   if(renameIdx>=0 && st.favs[renameIdx]){
     r.hidden=false;
     r.innerHTML='<input id="favRenameIn" type="text" maxlength="12" placeholder="通学・バイト など" value="'+
-      (st.favs[renameIdx].t||"").replace(/"/g,"&quot;")+'">'+
+      vgEsc(st.favs[renameIdx].t||"")+'">'+
       '<button class="btn tonal small" type="button" id="favRenameOk">保存</button>'+
       '<button class="btn small" type="button" id="favRenameNo">やめる</button>';
     var inp=$("favRenameIn");
