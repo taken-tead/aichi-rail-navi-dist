@@ -1161,6 +1161,189 @@ body.mapfull .navbar{display:none}
 #paneRoute.riding:not(.showall) #candCard,#paneRoute.riding:not(.showall) #res,#paneRoute.riding:not(.showall) #freqCard{display:none}
 .ridemore>summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--on-surface-variant);padding:6px 0}
 
+/* ===== ルート画面 案A：今必要な情報だけを1画面に ===== */
+/* 見本は docs/mock/route.html。360x640（タブバー込み）の初期・検索結果・乗車中でスクロールさせないため、
+   縦の配分は 区間110 / 条件40 / よく使う40 / サマリ48 / 候補3行 / 主ボタン52 を目安にする。
+   既存の .card .slot などを id 付きで上書きする（古い規則の上に重ねる形） */
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+#paneRoute{display:flex;flex-direction:column;gap:5px;padding-top:2px;padding-bottom:calc(var(--navh,75px) + 3px + env(safe-area-inset-bottom,0px))}
+#paneRoute #candCard{padding:0}
+#paneRoute .cands{margin-top:0}
+#paneRoute>*{flex:none}
+#paneRoute>.card,#paneRoute>.res{margin:0}
+
+/* --- 区間入力：現在駅・目的駅の2行。⌖は現在駅の右、＋経由は目的駅の右、⇅は2行の間 --- */
+#odCard{position:relative;border-radius:20px}
+#odCard .od{display:block;position:relative;padding:6px 0}
+#odCard .odrow{display:flex;align-items:center;min-width:0}
+#odCard .slot{flex:1;min-width:0;height:46px;padding:0 4px 0 14px;gap:10px;border-radius:14px}
+#odCard .slot .txt{display:flex;align-items:center;gap:8px;min-width:0}
+#odCard .slot .lab{flex:none;width:38px;white-space:nowrap}
+#odCard .slot .nm{flex:0 1 auto;font-size:18px;line-height:24px;min-width:0}
+#odCard .slot .nm.ph{font-size:15px}
+/* 路線名の文字は畳み、駅ナンバーのバッジだけ見せる（1行に収めるため。読み上げには残る） */
+#odCard .slot .ln{margin:0;flex:none;font-size:0;gap:0}
+#odCard .odbtn{flex:none;width:52px;height:46px;border-radius:14px;margin-right:6px;color:var(--primary);display:flex;align-items:center;justify-content:center}
+#odCard .odbtn svg{width:24px;height:24px}
+#odCard .viaadd{appearance:none;border:0;background:none;font:inherit;font-size:12px;font-weight:700;padding:0;cursor:pointer;color:var(--primary);border-radius:14px}
+#odCard .viaadd:focus-visible,#odCard .odbtn:focus-visible{outline:3px solid var(--primary);outline-offset:-3px}
+#odCard .odrule{display:none}
+/* ⇅は2つの点（現在駅・目的駅）の間。経由駅が増えても最初の境目に置く */
+#odCard #swapBtn{position:absolute;left:10px;top:38px;width:28px;height:28px;min-width:0;min-height:0;padding:0;border:1px solid var(--outline-variant);
+  background:var(--s-lowest);color:var(--primary);z-index:2}
+#odCard #swapBtn svg{width:16px;height:16px}
+#odCard #swapBtn::before{content:"";position:absolute;inset:-8px}
+#odCard .viarow{display:flex;align-items:center;padding:0 0 0 14px;gap:10px;height:46px}
+#odCard .viarow .vpick{flex-direction:row;align-items:center;gap:8px;padding:0}
+#odCard .viarow .vpick .lab{width:38px;flex:none}
+#odCard .viarow .vpick .nm{font-size:16px;flex:0 1 auto}
+#odCard .viarow .vpick .ln{margin:0;flex:1 1 0;min-width:0;overflow:hidden;white-space:nowrap}
+#odCard .viarow .mvbtn{width:44px;height:44px}
+#odCard .hint{padding:2px 14px 10px;margin:0}
+
+/* --- 条件・よく使う区間・結果サマリ：各1行 --- */
+.rrow{display:flex;align-items:center;gap:4px;min-width:0}
+.rchip{appearance:none;border:0;cursor:pointer;font:inherit;font-size:13px;font-weight:700;height:40px;padding:0 14px;border-radius:999px;
+  background:var(--secondary-container);color:var(--on-secondary-container);display:inline-flex;align-items:center;gap:6px;
+  white-space:nowrap;position:relative;flex:none;user-select:none;-webkit-user-select:none}
+.rchip::before{content:"";position:absolute;inset:-2px 0}   /* 見た目は40px、押せる範囲は44px */
+.rchip.cond{flex:1;min-width:0;font-size:14px}
+.rchip.cond #condTxt{overflow:hidden;text-overflow:ellipsis}
+.rchip .arw,.sumbtn .arw{margin-left:auto;opacity:.6;font-weight:800}
+.rchip.ghost{background:var(--s-lowest);border:1px solid var(--outline-variant);color:var(--on-surface)}
+#favMore{width:44px;padding:0;justify-content:center;font-size:20px;line-height:1;margin-left:2px}
+.favstrip{flex:1;min-width:0;display:flex;align-items:center;gap:6px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;padding:2px 12px 2px 0;
+  -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 16px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 16px),transparent)}
+.favstrip::-webkit-scrollbar{display:none}
+.rchip.fchip{background:var(--s-lowest);border:1px solid var(--outline-variant);color:var(--on-surface);font-weight:600}
+.rchip.fchip i{width:8px;height:8px;border-radius:3px;background:var(--c);flex:none}
+.rchip.fchip[aria-pressed="true"]{background:var(--primary-container);color:var(--on-primary-container);border-color:transparent}
+.favnone{font-size:12px;color:var(--on-surface-variant);white-space:nowrap}
+.tipbtn{appearance:none;border:0;background:none;cursor:pointer;flex:none;width:44px;height:44px;margin:-2px 0;padding:0;
+  display:flex;align-items:center;justify-content:center;color:var(--on-surface-variant);border-radius:50%}
+.tipbtn b{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--outline);display:flex;align-items:center;justify-content:center;
+  font-size:12px;line-height:1;font-weight:700;font-style:italic;font-family:Georgia,"Times New Roman",serif}
+.tipbtn[aria-expanded="true"] b{background:var(--on-surface);color:var(--surface);border-color:var(--on-surface)}
+.sumbtn{appearance:none;border:0;cursor:pointer;font:inherit;flex:1;min-width:0;height:48px;border-radius:14px;padding:0 16px;
+  background:var(--primary-container);color:var(--on-primary-container);font-size:17px;font-weight:800;letter-spacing:-.2px;
+  display:flex;align-items:center;gap:6px;text-align:left}
+.rchip:focus-visible,.tipbtn:focus-visible,.sumbtn:focus-visible,.cta:focus-visible,.ctasub:focus-visible,
+#candList .cand:focus-visible,.candmore:focus-visible,.qchip:focus-visible,.wheel:focus-visible{outline:3px solid var(--primary);outline-offset:2px}
+.rchip:active,.sumbtn:active,.qchip:active{filter:brightness(.96)}
+
+/* --- 候補：上位3件。「他N件」で同じ場所に展開（展開したときだけ内側でスクロール） --- */
+.candbox{margin:0;display:flex;flex-direction:column;min-height:0}
+.candbox.open{flex:1 1 0!important;min-height:150px}
+#candList{display:flex;flex-direction:column;min-height:0}
+.candbox.open #candList{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+#candList .cand{appearance:none;display:flex;align-items:center;gap:8px;height:48px;flex:none;width:100%;padding:0 8px;
+  border:0;border-top:1px solid var(--outline-variant);background:none;color:inherit;font:inherit;text-align:left;cursor:pointer;border-radius:0}
+#candList .cand:first-child{border-top-color:transparent}
+#candList .cand.sel{background:var(--s-1);box-shadow:inset 3px 0 0 var(--primary);border-radius:8px}
+#candList .tm{font-size:16px;font-weight:800;letter-spacing:-.3px;flex:none}
+#candList .tm .arw{opacity:.5;font-weight:700;margin:0 2px}
+#candList .dst{flex:1;min-width:0;font-size:12px;font-weight:700;opacity:.8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#candList .dur{margin-left:auto;flex:none;font-size:14px;font-weight:800}
+#candList .dur.best{color:var(--primary)}
+.candmore{appearance:none;border:0;background:none;cursor:pointer;font:inherit;font-size:13px;font-weight:700;color:var(--primary);
+  width:100%;height:36px;flex:none;border-radius:12px}
+
+/* --- 主ボタンはタブバーのすぐ上に1つだけ --- */
+.recrow{display:flex;gap:8px;margin-top:auto}
+.cta{appearance:none;border:0;cursor:pointer;font:inherit;font-size:16px;font-weight:700;flex:1;height:52px;border-radius:999px;
+  background:var(--primary);color:var(--on-primary)}
+.cta:disabled{opacity:.4;cursor:default}
+.ctasub{appearance:none;border:0;cursor:pointer;font:inherit;font-size:11px;font-weight:700;line-height:14px;flex:none;width:56px;height:52px;
+  border-radius:999px;background:var(--secondary-container);color:var(--on-secondary-container)}
+
+/* --- 乗車中：乗車カードと「経路・検索を戻す」だけ（既存の畳みを新しい要素にも効かせる） --- */
+#paneRoute.riding:not(.showall) #odCard,#paneRoute.riding:not(.showall) #condRow,#paneRoute.riding:not(.showall) #favRow,
+#paneRoute.riding:not(.showall) #sumRow,#paneRoute.riding:not(.showall) #candCard,#paneRoute.riding:not(.showall) #recRow{display:none}
+#paneRoute .ridemorebar{margin:0}
+
+/* --- 乗車前の記録フォーム：常時は出さず、「時刻指定」などで下からのシートとして開く --- */
+#paneRoute:not(.riding) #rideCard{display:none}
+#paneRoute.rfopen:not(.riding) #rideCard{display:block;position:fixed;left:0;right:0;bottom:0;max-width:600px;margin:0 auto;z-index:62;
+  max-height:86%;overflow-y:auto;border-radius:28px 28px 0 0;background:var(--s-low);box-shadow:var(--e3);padding-bottom:env(safe-area-inset-bottom,0px)}
+#rideCard>.grab{margin-top:10px}
+.rfscrim{position:fixed;inset:0;z-index:61;background:var(--scrim)}
+
+/* --- ⓘの吹き出し --- */
+.tipbubble{position:fixed;z-index:90;max-width:260px;background:var(--on-surface);color:var(--surface);font-size:12px;line-height:17px;
+  font-weight:600;padding:8px 12px;border-radius:12px;box-shadow:var(--e3);pointer-events:none}
+
+/* --- 条件シート：スピナー --- */
+.cbody{padding:0 16px 14px}
+.wheels{display:flex;gap:6px}
+.wh{flex:1;min-width:0}
+.wh.wb{flex:1.5}.wh.wd{flex:1.3}
+.wh .cap{font-size:11px;line-height:18px;font-weight:700;color:var(--on-surface-variant);text-align:center;height:18px}
+.wbox{position:relative;height:132px}
+.wbox::before{content:"";position:absolute;left:0;right:0;top:44px;height:44px;border-radius:12px;background:var(--secondary-container)}
+.wheel{position:relative;height:132px;margin:0;padding:44px 0;list-style:none;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;
+  overscroll-behavior:contain;touch-action:pan-y;transition:opacity .15s;border-radius:12px;
+  -webkit-mask-image:linear-gradient(transparent,#000 30%,#000 70%,transparent);mask-image:linear-gradient(transparent,#000 30%,#000 70%,transparent)}
+.wheel::-webkit-scrollbar{display:none}
+.wheel li{height:44px;display:flex;align-items:center;justify-content:center;scroll-snap-align:center;font-size:16px;font-weight:600;
+  color:var(--on-surface-variant);user-select:none;-webkit-user-select:none;cursor:pointer;white-space:nowrap}
+.wheel li.cur{color:var(--on-secondary-container);font-weight:800;font-size:18px}
+.wheel.off{opacity:.28;overflow:hidden;pointer-events:none}
+.sortrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
+.sortrow .k{font-size:12px;font-weight:700;color:var(--on-surface-variant)}
+.sortrow .seg button{height:44px;padding:0 18px;font-size:13px}
+.cdecide{min-height:52px;font-size:16px;margin-top:12px;justify-content:center}
+@media (prefers-reduced-motion:reduce){.wheel{transition:none}}
+
+/* --- 詳細シート・管理シート --- */
+.rdbody{padding:2px 12px 18px;display:flex;flex-direction:column;gap:12px}
+.rdbody>.res,.rdbody>.card{margin:0}
+#fSheet .dsbody{padding:2px 12px 18px}
+#favCard{margin:0}
+
+/* --- 駅選択シートの先頭：「よく使う」「最近」の横チップ --- */
+.quick{padding:0 16px 6px;display:flex;flex-direction:column;gap:2px}
+.qrow{display:flex;align-items:center;gap:8px;min-width:0}
+.qk{flex:none;width:54px;font-size:11px;font-weight:700;color:var(--on-surface-variant)}
+.qchips{flex:1;min-width:0;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0}
+.qchips::-webkit-scrollbar{display:none}
+.qchip{appearance:none;cursor:pointer;font:inherit;font-size:14px;font-weight:600;height:40px;padding:0 14px;border-radius:999px;flex:none;
+  border:1px solid var(--outline-variant);background:var(--s-lowest);color:var(--on-surface);display:inline-flex;align-items:center;gap:6px;
+  white-space:nowrap;position:relative}
+.qchip::before{content:"";position:absolute;inset:-2px 0}
+.qchip i{width:8px;height:8px;border-radius:3px;background:var(--c);flex:none}
+.qchip.clr{color:var(--error);font-size:13px}
+
+/* --- 乗車中カード：次の駅を大きく、操作は「降りる」「遅れている」の2つだけ同じ大きさで --- */
+.ridehd .ridetime{font-size:12px;font-weight:700;color:var(--on-surface-variant)}
+.ridenow b{font-size:22px;line-height:28px;letter-spacing:-.3px}
+.ridenow span{font-size:13px}
+.rbtns{display:flex;gap:8px}
+.rbtns .btn{flex:1;min-height:48px;justify-content:center;font-size:15px;border-radius:999px}
+.ridestats{gap:24px}
+.ridebody .ridestats .stat .v{font-size:28px;line-height:34px}
+
+/* --- タップ領域は44px以上（実測は run.js ではなく手元の確認。.btn は overflow:hidden なので、広げる疑似要素は使えない） --- */
+.rchip::before,.qchip::before{inset:-3px 0}
+.rchip.fchip{height:44px}
+.favstrip{padding:0 12px 0 0}
+.candmore::before{content:"";position:absolute;inset:-4px 0}
+.candmore{position:relative}
+#odCard #swapBtn{overflow:visible}
+#odCard #swapBtn::after{border-radius:50%}
+#odCard #swapBtn::before{inset:-10px}
+#rideCard .btn.small{min-width:44px}
+.opt{min-height:44px}
+.rdbody .seg button{height:44px}
+.rdbody .dchip{min-height:44px}
+#fSheet .btn.small,#rideCard .btn.small{min-height:44px}
+#fSheet .fav{min-height:44px}
+#rideCard .dchip{min-height:44px}
+#rideMoreBtn{min-height:44px}
+.ridemore>summary,.ridefix>summary{min-height:44px;display:flex;align-items:center;gap:6px;list-style:none}
+.ridemore>summary::-webkit-details-marker,.ridefix>summary::-webkit-details-marker{display:none}
+.ridemore>summary::before,.ridefix>summary::before{content:"▸";font-size:12px}
+.ridemore[open]>summary::before,.ridefix[open]>summary::before{content:"▾"}
+
 </style>
 </head>
 <body>
@@ -1176,99 +1359,80 @@ body.mapfull .navbar{display:none}
   <!-- ============ ルート ============ -->
   <section class="pane" id="paneRoute">
 
-    <section class="card" id="favCard" aria-label="よく使う区間">
-      <div class="cardhd">
-        <h2>よく使う区間</h2>
-        <button class="btn small" id="favEdit" type="button" aria-pressed="false">編集</button>
-      </div>
-      <div class="favs" id="favList"></div>
-      <div class="favacts">
-        <button class="btn tonal small" id="favAdd" type="button">＋ 今の区間を登録</button>
-        <button class="btn outlined small" id="favPick" type="button">＋ 駅を選んで登録</button>
-      </div>
-      <div class="favrename" id="favRename" hidden></div>
-    </section>
-
+    <!-- 案A：今必要な情報だけを1画面に出す。詳細・条件・登録は下のシートへ逃がす（docs/mock/route.html が見本） -->
     <section class="card elev" id="odCard" aria-label="区間">
       <div class="od">
         <div class="odcol">
-          <button class="slot" id="slotFrom" type="button">
-            <span class="dotcol"><span class="d1"></span></span>
-            <span class="txt">
-              <span class="lab">現在駅</span>
-              <span class="nm ph" id="fromName">駅を選ぶ</span>
-              <span class="ln" id="fromSub"></span>
-            </span>
-          </button>
-          <div class="odrule"></div>
+          <div class="odrow">
+            <button class="slot" id="slotFrom" type="button">
+              <span class="dotcol"><span class="d1"></span></span>
+              <span class="txt">
+                <span class="lab">現在駅</span>
+                <span class="nm ph" id="fromName">駅を選ぶ</span>
+                <span class="ln" id="fromSub"></span>
+              </span>
+            </button>
+            <button class="btn icon odbtn" id="gpsBtn" type="button" aria-label="現在地から探す"><span id="gpsIcon"></span></button>
+          </div>
           <div id="viaList"></div>
-          <button class="slot" id="slotTo" type="button">
-            <span class="dotcol"><span class="d2"></span></span>
-            <span class="txt">
-              <span class="lab">目的駅</span>
-              <span class="nm ph" id="toName">駅を選ぶ</span>
-              <span class="ln" id="toSub"></span>
-            </span>
-          </button>
+          <div class="odrow">
+            <button class="slot" id="slotTo" type="button">
+              <span class="dotcol"><span class="d2"></span></span>
+              <span class="txt">
+                <span class="lab">目的駅</span>
+                <span class="nm ph" id="toName">駅を選ぶ</span>
+                <span class="ln" id="toSub"></span>
+              </span>
+            </button>
+            <button class="viaadd odbtn" id="viaAdd" type="button" aria-label="経由駅を追加">＋経由</button>
+          </div>
         </div>
         <button class="btn icon" id="swapBtn" type="button" aria-label="現在駅と目的駅を入れ替え"></button>
       </div>
-      <div class="viaadd"><button class="btn small outlined" id="viaAdd" type="button">＋ 経由駅を追加</button></div>
-      <div class="acts">
-        <button class="btn filled" id="gpsBtn" type="button"><span id="gpsIcon"></span>現在地から探す</button>
-        <button class="btn outlined small" id="clearBtn" type="button">目的駅をクリア</button>
-      </div>
+      <button id="clearBtn" type="button" hidden>目的駅をクリア</button>
       <p class="hint" id="gpsNote" hidden></p>
     </section>
 
-    <section class="card elev" id="condCard" aria-label="検索条件">
-      <div class="seg wrap" id="qMode" role="group" aria-label="基準">
-        <button type="button" data-qmode="now">今すぐ</button><button type="button" data-qmode="dep">出発</button><button type="button" data-qmode="arr">到着</button><button type="button" data-qmode="first">始発</button><button type="button" data-qmode="last">終電</button>
-      </div>
-      <div class="whenrow" id="qWhen" hidden>
-        <input type="date" id="qDate" aria-label="日付"><input type="time" id="qTimeIn" aria-label="時刻">
-      </div>
-      <div class="seg wide" id="qSort" role="group" aria-label="並べ替え">
-        <button type="button" data-qsort="fast">早い順</button><button type="button" data-qsort="easy">乗換が楽</button>
-      </div>
-    </section>
+    <!-- 条件は1行チップ。タップで条件シート（スピナー）。ⓘは押したときだけ吹き出し -->
+    <div class="rrow" id="condRow">
+      <button class="rchip cond" id="condChip" type="button" aria-haspopup="dialog" aria-controls="cSheet">
+        <span aria-hidden="true">⏱</span><span id="condTxt">今すぐ・早い順</span><span class="arw" aria-hidden="true">›</span>
+      </button>
+      <button class="tipbtn" id="tipCond" type="button" aria-label="条件の説明" aria-expanded="false"
+        data-tip="「今すぐ」は今の時刻で探します。時刻を決めたいときは「出発」「到着」を選びます。"><b aria-hidden="true">i</b></button>
+    </div>
 
-    <section class="card elev" id="candCard" hidden aria-label="候補">
-      <div class="cardhd"><h2 id="candHd">この先の電車</h2><span class="candnote" id="candNote"></span></div>
+    <!-- よく使う区間は横1行。登録・編集は「⋯」の管理シートにまとめる -->
+    <div class="rrow" id="favRow">
+      <div class="favstrip" id="favStrip" role="group" aria-label="よく使う区間"></div>
+      <button class="rchip ghost" id="favMore" type="button" aria-label="よく使う区間の登録・編集" aria-haspopup="dialog" aria-controls="fSheet">⋯</button>
+    </div>
+
+    <!-- 結果サマリ1行。タップで詳細シート -->
+    <div class="rrow" id="sumRow" hidden aria-live="polite">
+      <button class="sumbtn" id="sumBtn" type="button" aria-haspopup="dialog" aria-controls="rdSheet"><span id="sumTxt"></span><span class="arw" aria-hidden="true">›</span></button>
+      <button class="tipbtn" id="tipSum" type="button" aria-label="結果の説明" aria-expanded="false" data-tip=""><b aria-hidden="true">i</b></button>
+    </div>
+
+    <section class="candbox" id="candCard" hidden aria-label="候補">
+      <h2 class="vh" id="candHd">電車の候補</h2><span id="candNote" hidden></span>
       <div class="cands" id="candList"></div>
+      <button class="candmore" id="candMore" type="button" aria-expanded="false" hidden></button>
     </section>
 
-    <section class="res" id="res" hidden aria-live="polite">
-      <div class="reshd" id="resHdr"></div>
-      <div class="stats">
-        <div class="stat"><div class="v" id="stTime">–<small>分</small></div><div class="k">所要（目安）</div></div>
-        <div class="stat"><div class="v" id="stCount">–<small>駅</small></div><div class="k">駅数</div></div>
-        <div class="stat"><div class="v" id="stFare">–<small>円</small></div><div class="k" id="stFareK">運賃</div></div>
-      </div>
-      <div class="resbody">
-        <div class="types" id="times"></div>
-        <div class="legs" id="legs"></div>
-      </div>
-    </section>
+    <!-- 主ボタンは1つだけ（候補があれば選んだ電車で記録、無ければ時刻を入れるフォーム） -->
+    <div class="recrow" id="recRow" hidden>
+      <button class="cta" id="recBtn" type="button">乗車を記録</button>
+      <button class="ctasub" id="rfOpen" type="button" aria-label="別の時刻で乗車を記録">時刻<br>指定</button>
+    </div>
 
     <section class="card elev" id="rideCard" hidden aria-label="乗車"></section>
-    <div class="ridemorebar" id="rideMoreBar" hidden><button class="btn small outlined" id="rideMoreBtn" type="button" aria-pressed="false">経路・検索・発車の目安も表示</button></div>
+    <div class="ridemorebar" id="rideMoreBar" hidden><button class="btn small outlined" id="rideMoreBtn" type="button" aria-pressed="false">経路・検索を戻す</button></div>
 
     <section class="card elev" id="voiceCard" hidden aria-label="音声駅案内の状態"></section>
-
-    <section class="card elev" id="freqCard" hidden aria-label="発車の目安">
-      <div class="cardhd">
-        <h2>発車の目安</h2>
-        <div class="seg" id="dayToggle" role="group" aria-label="平日・土休日">
-          <button type="button" data-day="wd">平日</button><button type="button" data-day="hd">土休日</button>
-        </div>
-      </div>
-      <div class="freqdirs" id="freqDirs"></div>
-      <div class="freqbig" id="freqBig"></div>
-      <div class="bands" id="freqBands"></div>
-      <p class="freqnote" id="freqNote"></p>
-    </section>
   </section>
+  <div class="rfscrim" id="rfScrim" hidden></div>
+  <div class="tipbubble" id="bubble" role="status" hidden></div>
 
   <!-- ============ 地図 ============ -->
   <!-- ============ 時刻表 ============ -->
@@ -1833,6 +1997,94 @@ body.mapfull .navbar{display:none}
   </div>
 </div>
 
+<!-- 条件シート：基準・日付・時・分のスピナー（scroll-snap）と並べ替え -->
+<div class="sheet" id="cSheet" hidden>
+  <div class="sheetin" role="dialog" aria-modal="true" aria-labelledby="cTitle">
+    <div class="grab"></div>
+    <div class="sheethd">
+      <strong id="cTitle">条件</strong>
+      <button class="btn icon" id="cClose" type="button" aria-label="閉じる"></button>
+    </div>
+    <div class="cbody">
+      <div class="wheels" role="group" aria-label="基準と日時">
+        <div class="wh wb"><div class="cap" id="capBasis">基準</div><div class="wbox"><ul class="wheel" id="wBasis" role="listbox" tabindex="0" aria-labelledby="capBasis"></ul></div></div>
+        <div class="wh wd"><div class="cap" id="capDate">日付</div><div class="wbox"><ul class="wheel" id="wDate" role="listbox" tabindex="0" aria-labelledby="capDate"></ul></div></div>
+        <div class="wh"><div class="cap" id="capHour">時</div><div class="wbox"><ul class="wheel" id="wHour" role="listbox" tabindex="0" aria-labelledby="capHour"></ul></div></div>
+        <div class="wh"><div class="cap" id="capMin">分</div><div class="wbox"><ul class="wheel" id="wMin" role="listbox" tabindex="0" aria-labelledby="capMin"></ul></div></div>
+      </div>
+      <div class="sortrow"><span class="k" id="capSort">並べ替え</span>
+        <div class="seg" id="sortSeg" role="group" aria-labelledby="capSort">
+          <button type="button" data-csort="fast">早い順</button><button type="button" data-csort="easy">乗換が楽</button>
+        </div>
+      </div>
+      <button class="btn filled block cdecide" id="cDecide" type="button">決定</button>
+    </div>
+  </div>
+</div>
+
+<!-- 詳細シート：区間ごとの内訳・運賃・発車の目安 -->
+<div class="sheet" id="rdSheet" hidden>
+  <div class="sheetin" role="dialog" aria-modal="true" aria-labelledby="rdTitle">
+    <div class="grab"></div>
+    <div class="sheethd">
+      <strong id="rdTitle">経路の詳細</strong>
+      <button class="btn icon" id="rdClose" type="button" aria-label="閉じる"></button>
+    </div>
+    <div class="dsbody rdbody">
+      <section class="res" id="res" hidden aria-live="polite">
+        <div class="reshd" id="resHdr"></div>
+        <div class="stats">
+          <div class="stat"><div class="v" id="stTime">–<small>分</small></div><div class="k">所要（目安）</div></div>
+          <div class="stat"><div class="v" id="stCount">–<small>駅</small></div><div class="k">駅数</div></div>
+          <div class="stat"><div class="v" id="stFare">–<small>円</small></div><div class="k" id="stFareK">運賃</div></div>
+        </div>
+        <div class="resbody">
+          <div class="types" id="times"></div>
+          <div class="legs" id="legs"></div>
+        </div>
+      </section>
+
+      <section class="card elev" id="freqCard" hidden aria-label="発車の目安">
+        <div class="cardhd">
+          <h2>発車の目安</h2>
+          <div class="seg" id="dayToggle" role="group" aria-label="平日・土休日">
+            <button type="button" data-day="wd">平日</button><button type="button" data-day="hd">土休日</button>
+          </div>
+        </div>
+        <div class="freqdirs" id="freqDirs"></div>
+        <div class="freqbig" id="freqBig"></div>
+        <div class="bands" id="freqBands"></div>
+        <p class="freqnote" id="freqNote"></p>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- よく使う区間の管理シート（登録・編集・名前変更） -->
+<div class="sheet" id="fSheet" hidden>
+  <div class="sheetin" role="dialog" aria-modal="true" aria-labelledby="fTitle">
+    <div class="grab"></div>
+    <div class="sheethd">
+      <strong id="fTitle">よく使う区間</strong>
+      <button class="btn icon" id="fClose" type="button" aria-label="閉じる"></button>
+    </div>
+    <div class="dsbody">
+      <section class="card" id="favCard" aria-label="よく使う区間の登録・編集">
+        <div class="cardhd">
+          <h2>登録済み</h2>
+          <button class="btn small" id="favEdit" type="button" aria-pressed="false">編集</button>
+        </div>
+        <div class="favs" id="favList"></div>
+        <div class="favacts">
+          <button class="btn tonal small" id="favAdd" type="button">＋ 今の区間を登録</button>
+          <button class="btn outlined small" id="favPick" type="button">＋ 駅を選んで登録</button>
+        </div>
+        <div class="favrename" id="favRename" hidden></div>
+      </section>
+    </div>
+  </div>
+</div>
+
 <div class="sheet" id="sheet" hidden>
   <div class="sheetin" role="dialog" aria-modal="true" aria-label="駅を選ぶ">
     <div class="grab"></div>
@@ -1844,11 +2096,12 @@ body.mapfull .navbar{display:none}
       <span id="sheetSearchIcon"></span>
       <input id="sheetFilter" type="search" placeholder="駅名・よみ・駅番号" autocomplete="off" aria-label="駅を検索">
     </label>
+    <div class="quick" id="sheetQuick" hidden></div>
     <div class="sheetls" id="sheetLs"></div>
   </div>
 </div>
 
-<script>window.RAIL_NEWS=[{"v": "5.16", "d": "2026-10-14", "items": ["地図ページの一番上に「目的地の駅名を入力」を追加しました。駅名（読み仮名でも可）を入れて選ぶと、現在地から最寄りの駅を出発駅にして、所要時間と到着の目安、「ルートで乗車を記録」を出します。位置の精度が悪いときや隣の駅と見分けがつかないときは、出発駅を決めずに候補の駅を出します。", "GPS で「いま着いた駅」が実際より早く出る問題を直しました。これまでは一番近い駅を使っていたため、駅と駅の中間を過ぎると、まだ着いていない次の駅が現在駅になっていました。今は路線の上のどこにいるかで、次の駅に着く（名鉄 200m・地下鉄 120m 以内）まで前の駅のままにします。基地局の測位は、GPS が届いているあいだは使いません（要アプリ更新）。名鉄での測位の許容も、120秒前→60秒前までにしました。", "乗車中のルートページを整理しました。乗車カードが一番上に来て、よく使う区間・区間・検索条件・候補・発車の目安は畳まれます（「経路・検索・発車の目安も表示」で戻せます）。乗った文言とポップアップの案内は、「その他」にまとめました。", "設定を4つのグループ（通知・ポップアップ／表示・乗った文言／音声駅案内／アプリとデータ）に分けて、折りたたみにしました。開き閉じは覚えます。地図の「表示する路線」「タップの動作」は「地図の設定」にまとめました。", "0〜4時ごろに時刻表の「次の電車」の日付が1日先になる不具合を直しました（深夜に「次の電車まで1700分」と出ていました）。", "設定の「アプリとデータ」に、乗車中の記録（診断用）を追加しました。ポップアップが出た時刻や GPS の推定を、この端末の中だけに残します。ポップアップや現在駅がおかしいときは、「コピー」して見せてください。"]}, {"v": "5.15", "d": "2026-10-14", "items": ["乗車中の「残り◯分」「まもなく」「乗り過ごし」「降車アラーム」を、画面に出ている到着予定時刻と同じ基準にそろえました。これまでは画面の到着予定と通知の判定が別々の計算で、予定より早くポップアップが出ることがありました。乗り過ごしの警告は、到着予定の2分後を過ぎてからだけ出ます（GPS は30秒以内のものだけ使います）。", "ポップアップを「まもなく」「到着予定時刻」「乗り過ごしかも」の段階ごとに出すようにしました。閉じても、次の段階でまた出ます。到着予定を過ぎたあとは、閉じても2分おきに最大3回、もう一度知らせます。降車アラームも、到着予定の数分前と到着予定時刻ちょうどの2回です（要アプリ更新）。", "ポップアップ・通知・他のアプリの上の大きなポップアップ・乗車カードに「遅れている」ボタンを追加しました。押すと到着予定が3分後ろにずれ（すでに過ぎていれば、いまから3分後）、また「まもなく」から知らせます。押した回数と合計は乗車履歴に残ります（通知・大きなポップアップのボタンは要アプリ更新）。", "乗車の登録を、直近60分以内に出た電車なら「あとから」できるようにしました。乗車カードに「さっき出た電車（60分以内）」を追加。時刻表ページの列車を開くと「この電車に乗った（乗車を記録）」が出ます（目的駅が未設定なら、その場で選べます）。到着予定をすでに過ぎている電車を登録したときは、通知は出さず「降りましたか？」を1回だけ聞きます。"]}, {"v": "5.14", "d": "2026-09-30", "items": ["ダークモードを、地図だけでなく全体で見やすくしました。黒に近い地、オレンジの選択色、細いオレンジ系の枠（NERV 風）にし、カードが背景に埋もれないようにしました。文字と背景の明るさの差は、本文・補足・ボタン文字とも読みやすい水準（4.5:1 以上）にしています。ライトモードは変わりません。", "ダークモードの地図を見やすくしました。黒地に細いオレンジの境界線と六角形の格子（NERV 風）、路線の色を明るく、駅名・地名は琥珀色にして、路線と文字が背景に埋もれないようにしています。公式の路線図（画像）は、路線の色を変えないまま白の眩しさだけを抑えます（画面の更新だけで反映されます）。", "自動更新を、設定の「アプリとデータの更新」で、オン／オフできるようにしました（既定はオン）。オフにすると、無線LANのときの定期確認と、アプリを開いたときの確認をやめます。「今すぐ確認」は、オフでも使えます（要アプリ更新。アプリ本体が古いと切り替えられないので、その旨を表示します。今回、アプリ本体の版を 5.14 に上げました）。", "目的駅が近づいたとき、他のアプリを使っていても見えるように、画面の上に大きなポップアップ（「まもなく〇〇」と「降車する」「閉じる」のカード。iPhone のダイナミックアイランドのような表示）を重ねて出せるようにしました。端末の「他のアプリの上に重ねて表示」の許可が必要です。設定の「他のアプリの上に大きなポップアップ」で、許可・オン／オフ・試しの表示ができます。許可がないときは、これまでどおり「降車する」付きの通知が出ます（要アプリ更新）。", "音声駅案内を、特急・快特などのときは、その列車が停まる駅だけ案内するようにしました。乗車を記録するときに種別（快特・特急など）を選ぶか、時刻表の候補（発車時刻のボタン）から登録すると使われます（時刻表から選ぶと、その列車の実際の停車駅のとおり）。種別を選ばないとき、普通・各停、乗り換えたあとの列車は、これまでどおり全駅を案内します。乗車カード・通知の「次の駅」「残り駅数」も、停まる駅だけで数えます。", "「使い方」に「アプリを更新する」を追加しました。自動更新のしくみ、いま確認する方法、初回だけの許可、うまく動かないとき、APK を手で入れる手順を、図と画面の写真つきで説明しています。", "メニューに「使い方」を追加しました。ルート検索・乗車の記録（降車ポップアップ、位置の補正、乗り過ごし警告、乗った文言）・時刻表と発車標・地図と路線図・音声駅案内・メニューの各機能・設定・操作のコツを説明しています。ことばで探せます。説明の文は web/help.md に書いてあり、自由に書き換えられます。", "メニューを、ハンバーガーボタンのほかに、画面の左側（左から35%）から右へスワイプして引き出せるようにしました。開いたメニューは、左へスワイプ（または外側をタップ）で閉じます。地図・路線図の画像・横にスクロールする表・入力欄・シートの上では、そちらの操作を優先して開きません。端末の「戻る」ジェスチャー（画面の端）が先に取られることがあるので、少し内側から始めてください。", "マイページに「データのバックアップ」を追加しました。定期券・よく使う区間・乗車履歴・お気に入り・設定・書き換えた更新情報などを、文字（JSON）で書き出してコピー（アプリなら「共有…」も）でき、貼り付けて取り込めます（機種変更や、消えたときの復元用。外には送りません）。", "乗り換えの待ち時間の計算を、時刻表がある駅（名古屋本線・地下鉄）では、その駅・向き・時刻の前後の実際の発車間隔から求めるようにしました。運行間隔の表（地下鉄の推定だった時間帯）も、時刻表から求めた値に直しました。", "乗り過ごし警告を追加しました。乗車中にGPSで、到着予定を2分以上過ぎて目的駅から遠ざかっている（地下鉄は1.2km以上、それ以外は1.8km以上）と、ポップアップ・バイブで知らせます。アプリが裏なら「降車する」付きの通知です。乗車中は位置情報を使うので、設定の「乗り過ごし警告（GPSを使う）」で切れます（既定はオン。要アプリ更新）。", "更新情報の文言を、アプリの中で書き換えられるようにしました。この画面の「編集」で、項目の直し・削除・追加、自分のメモの追加、元に戻すができます（この端末だけに保存）。元の文は web/news.md に書きます。", "時刻表の「さらに見る」で、その駅・その方面の始発から終電まですべて表示するようにしました（始発・終電の印つき）。下に浮かぶ「始発へ／いまへ／終電へ」で移動でき、「とじる」で元の次の5本に戻ります。", "乗った文言の書き方を、乗車カードの「文言を編集」（登録前は「書き方を変える」）からも変えられるようにしました（設定の「乗った文言の書き方」の「編集」と同じ画面）。", "遅延・運休情報の取得履歴を、端末の中に約1日ぶん（内容が同じ間は1件にまとめて）残すようにしました。乗車中の時間帯に記載があれば、あとで無線LANにつながったときにも、マイページのお知らせに出せます（乗車の10分前から降りて2時間後までに取った情報を使います）。「遅延・運休情報」の画面にも取得の履歴が出ます（要アプリ更新）。", "乗車を記録すると、乗車中の画面に「16分発名古屋行き特急乗った」のような一言を出します（発車の分・行き先・種別。地下鉄は種別なし）。「コピー」ボタンでクリップボードにコピーできます。設定の「乗車登録時に…自動コピー」をオンにすると、記録した瞬間に自動でコピーします（既定はオフ）。行き先・種別は乗った駅の時刻表から探します。時刻表に無い（手入力の時刻がずれている）ときは、行き先を省きます。", "この文言の書き方は、設定の「乗った文言の書き方」で変えられます。{分}{時}{時刻}{行き先}{行き}{種別}{路線}{乗車駅}{目的駅} を組み合わせられ、「初期値に戻す」もあります（例：「{時刻}発 {行き先}行き {種別} 乗車しました」）。", "メニューに「マイページ」を追加しました。定期券・よく使う区間・乗車履歴（「降りる」で自動的に記録。この端末の中だけ、直近100件）と、よく乗る区間の集計を見られます。履歴の行をタップすると、その区間をルートに入れます。", "メニューに「遅延・運休情報」を追加しました。無線LAN（従量制でない接続）につながっているときに、公式ページの運行情報を30分ごとを目安に取っておき、遅延・運休の記載を一覧にします。公式ページの文言から自動で拾った目安なので、必ず公式の運行情報も確認してください（要アプリ更新）。", "メニューに「遅延証明書」を追加しました。名鉄・名古屋市営地下鉄それぞれの遅延証明書のページを開きます。", "定期券の登録・削除は、設定からマイページへ移しました。", "無線LANで取得した運行情報に、乗車登録した電車（いまの乗車・履歴の直近36時間）の路線の遅延・運休の記載があれば、マイページにお知らせを出し、遅延証明書の公式ページへ案内します（メニューの「マイページ」に「お知らせ」の印が付きます）。取得のタイミングによっては、乗った時間帯の遅れを拾えないことがあります。"]}, {"v": "5.12", "d": "2026-09-30", "items": ["乗車中に目的駅が近づく（あと約3分、または次が目的駅）と、ポップアップで知らせます。ポップアップの「降車する」からそのまま降車（乗車記録の終了）ができます。アプリが裏にあるときは、「降車する」ボタン付きの通知（画面上部に出るヘッドアップ通知）で知らせます（要アプリ更新）。", "設定に「到着ポップアップ・通知のバイブ」（オン／オフ、既定はオン）を追加しました。目的駅が近づいたポップアップが出るときにバイブが鳴ります。裏で出す通知・降車アラームの振動にも同じ設定が効きます（要アプリ更新）。", "アプリが裏にあるときの乗車中通知（次の駅）の更新が遅れる問題を直しました。乗車中は小さな常駐（通知欄の目立たない項目）で5秒ごとに更新します。音声駅案内がONなら、通知の「次の駅」もGPSを使った推定に合わせます（要アプリ更新）。", "現在位置のずれを補正できるようにしました。乗車中は「現在位置がずれているとき」から、今いる駅をタップすると、そこを基準に現在位置と到着予定を直します。地図には「タップ：現在駅にする」を追加しました。", "現在地から探すとき、測位の誤差が大きい・隣の駅と区別できない場合は、勝手に決めず候補の駅を並べて選べるようにしました（地下鉄は判定を厳しくしています）。音声駅案内でも、地下鉄では精度の良い最近の測位だけを使います。", "路線図ページに「路線別」を追加しました。アプリに入っている全26路線を、路線ごとに駅の並び・乗換先・停車種別つきで見られます。", "音声駅案内の音量を、30〜300%のスライダーで調整できるようにしました（100%が従来の最大。超えた分は端末側で増幅します。要アプリ更新）。"]}, {"v": "5.11", "d": "2026-09-29", "items": ["メニューに「利用履歴を印刷」を追加しました。「カードを読み取る」を押してICカードをタッチすると、券売機で印字できる利用履歴のように、区間・金額・残高を一覧にして、プリンターで印刷したりPDFに保存したりできます（プリンターは端末の印刷機能に対応したもの）。", "この画面（更新情報）にも、更新データがあるかを確かめる「今すぐ確認」ボタンを付けました。"]}, {"v": "5.10", "d": "2026-09-29", "items": ["ICカード：「読み取る」ボタンを押したときだけ読み取るようにしました（30秒待ちます）。", "ICカードの改札の記録（直近3件の入出場）から、定期券の範囲を推定して候補に出します（運賃0円の乗車が履歴にあれば、それも使います）。路線・起点・終点を直して、定期券として登録できます。", "ICカードの改札の記録（直近の入出場）を、読めた値のまま確認できるようにしました。"]}, {"v": "5.9", "d": "2026-09-29", "items": ["画面左上にメニュー（≡）を追加しました。", "設定をメニューへ移しました（下のタブは「ルート・時刻表・発車標・地図」の4つになりました）。", "ICカード：manaca・Suica などの交通系ICカードをスマホにタッチすると、残高と利用履歴（日付・区間・金額）を見られます。読み取った内容は保存も送信もしません。NFC対応の端末のみ。", "要望メッセージ：不具合の報告や改善の要望を、アプリの中から開発者に送れます（通信が必要です。返信はできません）。", "更新情報：この画面です。"]}, {"v": "5.8", "d": "2026-09-29", "items": ["無線LANにつながったとき、画面とデータ、アプリ本体を自動で更新するようにしました。", "名鉄の運賃を、公式の営業キロと運賃規則にそろえて計算するようにしました（最短経路で計算）。", "名鉄の路線を追加し、名古屋本線を名鉄岐阜まで延ばしました。", "名鉄公式サイトの駅情報（駅ナンバリング・読み・停車種別）を反映しました。"]}];window.RAIL_HELP=[{"h": "はじめに", "b": [{"k": "p", "t": "このアプリは、名鉄と名古屋市営地下鉄の経路検索・時刻表・発車標・乗車案内を、通信なしで使えるものです。"}, {"k": "ul", "i": ["通信を使うのは、アプリの更新の確認・要望メッセージの送信・遅延／運休情報の取得（無線LANのとき）・公式ページを開くときだけです。", "下のタブは、**ルート**・**時刻表**・**発車標**・**地図**。左上の**三本線のボタン**（または画面の左側から右へスワイプ）でメニューが開きます。", "戻るボタン（ジェスチャー）で、開いている画面やシートを閉じられます。"]}]}, {"h": "ルートを調べる", "b": [{"k": "ul", "i": ["「現在駅」と「目的駅」の欄をタップして駅を選びます。右の矢印ボタンで入れ替え、「＋経由駅を追加」で途中の駅を指定できます。", "「現在地から探す」は、位置情報から最寄りの駅を選びます。地下や高架下など位置が不確かなときは、勝手に決めず、近い駅の候補を並べます。", "**検索条件**：「今すぐ」「出発」「到着」「始発」「終電」から選びます。並べ替えは「早い順」「乗換が楽」。", "駅の一覧（地図タブの「駅一覧」）では、駅名をタップで目的駅、行の右の「現」で現在駅になります。", "よく使う区間は、上の「今の区間を登録」で保存すると、ワンタップで呼び出せます（並べ替え・名前の変更は「編集」）。", "運賃は大人普通運賃の目安です。定期券を登録した区間は0円として計算します（実際の精算と1区間ずれることがあります）。所要時間・到着予定は概算で、時刻表とはずれます。"]}]}, {"h": "乗車を記録する", "b": [{"k": "ul", "i": ["電車に乗ったら、「乗車を記録」に発車時刻を入れて（「今」ボタンや、時刻表の候補ボタンも使えます）「この時刻で乗車」を押します。", "乗車中は、到着予定・残り時間・「〇〇へ向かっています」を表示します。通知（アプリが裏のとき）にも同じ内容が出ます。", "「降りる」で記録を終えます。終えた乗車はマイページの履歴に残ります。", "**乗った文言**：登録すると「16分発名古屋行き特急乗った」のような一言が出ます。「コピー」でクリップボードに入ります。書き方は「文言を編集」（または設定の「乗った文言の書き方」）で変えられ、設定で「乗車登録時に自動コピー」もできます。", "**現在位置のずれの補正**：「現在位置がずれているとき」を開き、今いる駅をタップすると、そこを基準に現在位置と到着予定を直します。地図の「タップ：現在駅にする」でも現在駅を直せます。", "**降車ポップアップ**：目的駅が近づく（あと約3分、または次が目的駅）と画面に出ます。「降車する」でそのまま記録を終えられます。設定でバイブも鳴らせます。", "**他のアプリを使っているとき**：画面の上に、大きなカード（「まもなく〇〇」と「降車する」「閉じる」）を重ねて出します。iPhone のダイナミックアイランドのような表示です。使うには、端末の「他のアプリの上に重ねて表示」の許可が必要で、設定の「他のアプリの上に大きなポップアップ」の「許可を設定」から開けます（「試す」で見本が出ます）。許可がないときは、「降車する」付きの通知になります。", "**乗り過ごし警告**：到着予定を2分以上過ぎて、GPSで目的駅から遠ざかっているときに知らせます（乗車中は位置情報を使うので、設定で切れます）。", "**降車アラーム**：設定で、到着の何分前（または2駅前）に通知するかを選べます。"]}]}, {"h": "時刻表・発車標", "b": [{"k": "ul", "i": ["**時刻表**タブ：路線→駅→方面の順に選びます。名鉄は名古屋本線、地下鉄は全6路線の時刻表があります。平日／土休日は切り替えられます。", "「さらに見る」で、その駅・その方面の**始発から終電まで全部**を表示します。下に浮かぶ「始発へ／いまへ／終電へ」で移動でき、「とじる」で次の5本に戻ります。「時間帯」表示に切り替えると、時ごとの一覧で見られます。", "発車をタップすると、その列車のこの先の各駅の時刻が見られます（地下鉄は推定）。", "「☆登録」で駅と方面を登録すると、**発車標**タブに、登録した駅の次の電車が自動更新で並びます。ホーム画面のウィジェットにも出せます。", "乗換の待ち時間は、時刻表がある駅（名古屋本線・地下鉄）では、その駅の実際の発車間隔から求めています。"]}]}, {"h": "地図・路線図", "b": [{"k": "ul", "i": ["**地図**：実際の線路の形を描いた地図です（地図タイルは読み込まないので通信ゼロ）。「両方／名鉄／地下鉄」で表示を絞れます。ドラッグ・ピンチで動かし、駅をタップで目的駅になります。", "**路線図**：地下鉄・名鉄の公式案内図の画像と、**路線別**（アプリに入っている全26路線を、駅順・乗換先・停車種別つきで表示）があります。路線別の「現」「行」で現在駅・目的駅を選べます。", "**駅一覧**：路線ごとの駅の一覧です。"]}]}, {"h": "音声駅案内", "b": [{"k": "ul", "i": ["設定の「音声駅案内」をオンにして乗車を記録すると、「次は〇〇です」「まもなく〇〇です」「乗換は〇〇線です」などを音声で案内します（端末の音声合成を使います）。", "案内する内容（2駅前・次駅・まもなく・目的地・乗換・通過警告）、速度、**音量（30〜300%。100%を超えた分は増幅）**、イヤホン接続時だけ、声の種類、駅名の読みなどを設定で調整できます。", "**特急・快特などは、その列車が停まる駅だけ**を案内します。乗車を記録するときに、種別のボタン（快特・特急など）を選ぶか、時刻表の候補（発車時刻のボタン）から登録してください。時刻表から選ぶと、その列車の停車駅のとおりに案内します。種別を選ばないときは、全駅を案内します（普通・各停も全駅）。", "乗車カードや通知の「〇〇へ向かっています」「残り〇駅」も、停まる駅だけで数えます。乗り換えたあとの列車は種別が分からないので、全駅を案内します。", "位置情報とバックグラウンド実行を使います（画面を消していても案内します）。"]}]}, {"h": "メニューの機能", "b": [{"k": "ul", "i": ["**マイページ**：定期券の登録・削除、よく使う区間、乗車履歴（直近100件・この端末だけ）、よく乗る区間、データのバックアップ。乗った電車に遅延・運休の記載があると「お知らせ」が出ます。", "**遅延・運休情報**：無線LAN（従量制でない接続）のときに、公式ページの運行情報を取っておき、遅延・運休の記載を一覧にします。公式ページの文言から自動で拾った**目安**なので、必ず公式の運行情報も確認してください。", "**遅延証明書**：名鉄・名古屋市営地下鉄の遅延証明書のページを開きます。", "**ICカード**：交通系ICカードをスマホの背面にタッチして、利用履歴を見ます（「カードを読み取る」を押してからタッチ）。履歴から定期券の候補も出せます。", "**利用履歴を印刷**：ICカードの履歴を、印刷またはPDF保存します。", "**要望メッセージ**：開発者に要望や不具合を送ります（通信が必要）。", "**更新情報**：変更点の一覧です。「編集」で、あなた自身の言葉に書き換えたり、メモを足したりできます（この端末だけに保存）。"]}]}, {"h": "設定", "b": [{"k": "ul", "i": ["**表示**：乗車中の通知、降車アラーム、乗り過ごし警告、到着時のバイブ、乗った文言の書き方と自動コピー、テーマ（自動／明るい／暗い）。", "**音声駅案内**：上の「音声駅案内」の項目を参照。", "**アプリとデータの更新**：無線LANのときに自動で確認します。「今すぐ確認」でいつでも確認できます。"]}]}, {"h": "アプリを更新する", "b": [{"k": "p", "t": "**ふだんは自動**で更新されます。何もしなくても、無線LAN（従量制でない接続）につながったときに、約12時間に1回と、アプリを開いたときに、新しい版がないか確認します。自動更新は、設定の「アプリとデータの更新」の**「自動更新」をオフ**にすると止められます（オフでも、「今すぐ確認」で手動で確認できます）。"}, {"k": "img", "src": "help/update_flow.svg", "alt": "自動更新のしくみ"}, {"k": "ul", "i": ["**画面・時刻表・路線のデータ**：見つかると自動で取ってきて、**次にアプリを開いたときから**使います。アプリの入れ替えは要りません。", "**アプリ本体**：新しい版がある（更新情報に載る）と、ダウンロードして**通知**を出します。通知をタップすると、インストールの確認画面が出るので、「更新」を押します（確認画面は端末の仕様で必ず1回出ます）。", "更新できたかどうかは、メニューを開いた一番上の「**バージョン 5.14**」のように、版の番号で分かります。変更点は「更新情報」で読めます。"]}, {"k": "img", "src": "help/update_menu.png", "alt": "メニューの上に、いまの版が出る"}, {"k": "h", "t": "いま確認したいとき"}, {"k": "ul", "i": ["メニュー → **設定** → 下のほうの「**アプリとデータの更新**」で「**今すぐ確認**」を押します。最終確認の時刻と、結果（「画面とデータは最新です」など）が出ます。モバイル回線でも確認できます（通信します）。", "メニュー → **更新情報** の上の「**今すぐ確認**」でも、同じ確認ができます。"]}, {"k": "img", "src": "help/update_settings.png", "alt": "設定の「アプリとデータの更新」（新しいアプリ本体があるとき）"}, {"k": "img", "src": "help/update_news.png", "alt": "更新情報の画面の「今すぐ確認」"}, {"k": "h", "t": "初めてだけ必要な設定"}, {"k": "p", "t": "アプリ本体を自動で更新するには、初回だけ、端末で「**この提供元のアプリを許可**」（不明なアプリのインストール）をオンにします。設定の「アプリとデータの更新」に「**アプリ更新の許可を設定**」ボタンが出ていたら、それを押して、表示された画面で許可をオンにしてください。画面とデータの更新には、この許可は要りません。"}, {"k": "img", "src": "help/update_perm.png", "alt": "許可がまだのとき（「アプリ更新の許可を設定」が出る）"}, {"k": "h", "t": "うまく動かないとき"}, {"k": "ul", "i": ["更新した画面が開けなかったときは、次に開いたときに、アプリに入っている元の画面に戻ります。「同梱のデータに戻す」ボタン（更新した画面とデータがあるときだけ出ます）でも戻せます。", "「確認できませんでした」と出たら、電波のよいところで「今すぐ確認」をもう一度押してください。", "古いアプリには、先にアプリ本体の更新が必要なとき、画面を配らずにアプリ本体の更新を案内します。", "更新に使う通信は、確認とダウンロードだけです。経路検索・時刻表などは、通信なしで動きます。", "通信を減らしたいときや、いまの版のまま使いたいときは、「自動更新」をオフにします。オフにしている間は、新しい画面・データ・アプリ本体は届きません（「今すぐ確認」を押したときだけ確認します）。"]}, {"k": "h", "t": "自動更新が使えないとき（APK を手で入れる）"}, {"k": "p", "t": "GitHub にビルドされた APK を、直接ダウンロードして入れる方法です。手順は次のとおりです。"}, {"k": "img", "src": "help/update_manual.svg", "alt": "APK を手で入れる手順"}, {"k": "ul", "i": ["GitHub の「Actions」の実行結果の下にある「Artifacts」は、ログインした状態でないとダウンロードできません。保存期間は約3か月です。", "署名鍵が登録されていないビルドは、入っているアプリに上書きできません（お気に入りや設定も消えます）。先にマイページの「データのバックアップ」で書き出しておくと、取り込めます。"]}]}, {"h": "操作のコツ", "b": [{"k": "ul", "i": ["画面の**左側から右へスワイプ**でメニューが開き、開いたメニューは左へスワイプで閉じます。地図・路線図の画像・横にスクロールする表・入力欄の上では、その操作が優先です。端末の「戻る」ジェスチャー（画面の端）に取られることがあるので、少し内側から始めてください。", "一覧の長い画面（時刻表の全表示など）は、下に浮かぶボタンで先頭・いま・終電へ動けます。", "入力欄の文言（乗った文言・更新情報）は、入力するたびに自動で保存されます。"]}]}, {"h": "データ・バックアップ・注意", "b": [{"k": "ul", "i": ["時刻表：名鉄は名古屋本線（豊橋〜木曽川堤、2026年3月14日改正）、地下鉄は名古屋市交通局の駅別時刻表から作ったものです。他の名鉄の路線は、時刻表が無く、運行間隔の目安で待ち時間を出します。", "**バックアップ**：マイページの「データのバックアップ」で、定期券・履歴・設定などを文字で書き出せます。機種変更のときは、貼り付けて取り込みます。外には送りません。", "運賃・所要時間・到着予定は目安です。実際の運賃や運行は、必ず各社の公式情報を確認してください。", "個人利用のためのアプリです。時刻表などのデータは公開しないでください。"]}]}];window.RAIL_DATA=[{"id":"NH","name":"名鉄名古屋本線","short":"名古屋本線","op":"meitetsu","color":"#E4002B","st":[{"n":"豊橋","k":"とよはし","c":"NH01","la":34.76273,"lo":137.38213,"km":0.0,"t":["東海道新幹線","JR飯田線(豊橋～天竜峡)","JR東海道本線(浜松～岐阜)"],"r":4},{"n":"伊奈","k":"いな","c":"NH02","la":34.80286,"lo":137.35474,"km":5.0,"r":2},{"n":"小田渕","k":"おだぶち","c":"NH03","la":34.81474,"lo":137.34559,"km":6.6,"r":0},{"n":"国府","k":"こう","c":"NH04","la":34.83752,"lo":137.3281,"km":9.6,"t":["名鉄豊川線"],"r":3},{"n":"御油","k":"ごゆ","c":"NH05","la":34.84611,"lo":137.32144,"km":10.7,"r":0},{"n":"名電赤坂","k":"めいでんあかさか","c":"NH06","la":34.85933,"lo":137.31115,"km":12.5,"r":0},{"n":"名電長沢","k":"めいでんながさわ","c":"NH07","la":34.87162,"lo":137.2883,"km":15.0,"r":0},{"n":"本宿","k":"もとじゅく","c":"NH08","la":34.89303,"lo":137.26001,"km":18.7,"r":2},{"n":"名電山中","k":"めいでんやまなか","c":"NH09","la":34.89947,"lo":137.24283,"km":20.4,"r":0},{"n":"藤川","k":"ふじかわ","c":"NH10","la":34.9133,"lo":137.21843,"km":23.1,"r":1},{"n":"美合","k":"みあい","c":"NH11","la":34.92376,"lo":137.19632,"km":25.6,"r":2},{"n":"男川","k":"おとがわ","c":"NH12","la":34.93746,"lo":137.1833,"km":27.6,"r":1,"p":2},{"n":"東岡崎","k":"ひがしおかざき","c":"NH13","la":34.9519,"lo":137.16733,"km":29.8,"r":4},{"n":"岡崎公園前","k":"おかざきこうえんまえ","c":"NH14","la":34.95498,"lo":137.15331,"km":31.1,"r":0},{"n":"矢作橋","k":"やはぎばし","c":"NH15","la":34.96115,"lo":137.13996,"km":32.5,"r":1,"p":2},{"n":"宇頭","k":"うとう","c":"NH16","la":34.97137,"lo":137.1181,"km":34.8,"r":0},{"n":"新安城","k":"しんあんじょう","c":"NH17","la":34.98689,"lo":137.08544,"km":38.3,"t":["名鉄西尾線"],"r":3},{"n":"牛田","k":"うしだ","c":"NH18","la":34.99929,"lo":137.06095,"km":40.9,"r":0,"p":1},{"n":"知立","k":"ちりゅう","c":"NH19","la":35.0062,"lo":137.03963,"km":43.1,"t":["名鉄三河線"],"r":4},{"n":"一ツ木","k":"ひとつぎ","c":"NH20","la":35.01367,"lo":137.02551,"km":44.6,"r":0},{"n":"富士松","k":"ふじまつ","c":"NH21","la":35.02976,"lo":137.01651,"km":46.6,"r":0},{"n":"豊明","k":"とよあけ","c":"NH22","la":35.04113,"lo":137.00816,"km":48.1,"r":1,"p":2},{"n":"前後","k":"ぜんご","c":"NH23","la":35.05227,"lo":136.99567,"km":49.8,"r":2},{"n":"中京競馬場前","k":"ちゅうきょうけいばじょうまえ","c":"NH24","la":35.0613,"lo":136.98158,"km":51.4,"r":1,"p":2},{"n":"有松","k":"ありまつ","c":"NH25","la":35.06769,"lo":136.97108,"km":52.7,"r":1,"p":2},{"n":"左京山","k":"さきょうやま","c":"NH26","la":35.07055,"lo":136.9603,"km":53.8,"r":0,"p":1},{"n":"鳴海","k":"なるみ","c":"NH27","la":35.07915,"lo":136.9501,"km":55.1,"r":2,"p":3},{"n":"本星崎","k":"もとほしざき","c":"NH28","la":35.08739,"lo":136.93738,"km":56.7,"r":0},{"n":"本笠寺","k":"もとかさでら","c":"NH29","la":35.0992,"lo":136.93341,"km":58.2,"r":0,"p":1},{"n":"桜","k":"さくら","c":"NH30","la":35.10606,"lo":136.93459,"km":58.9,"r":0},{"n":"呼続","k":"よびつぎ","c":"NH31","la":35.11472,"lo":136.93039,"km":59.9,"r":0},{"n":"堀田","k":"ほりた","c":"NH32","la":35.12025,"lo":136.91984,"km":61.1,"r":2},{"n":"神宮前","k":"じんぐうまえ","c":"NH33","la":35.12586,"lo":136.91249,"km":62.2,"t":["名鉄常滑線"],"r":4},{"n":"金山","k":"かなやま","c":"NH34","la":35.14293,"lo":136.90052,"km":64.4,"t":["JR中央本線(名古屋～塩尻)","JR東海道本線(浜松～岐阜)","名鉄常滑線","地下鉄名城線","地下鉄名港線"],"r":4},{"n":"山王","k":"さんのう","c":"NH35","la":35.15233,"lo":136.88846,"km":66.0,"t":["名鉄常滑線"],"r":0},{"n":"名鉄名古屋","k":"めいてつなごや","c":"NH36","la":35.16925,"lo":136.88419,"km":68.0,"t":["名鉄常滑線","名鉄犬山線"],"r":4},{"n":"栄生","k":"さこう","c":"NH37","la":35.18369,"lo":136.87305,"km":69.9,"t":["名鉄犬山線"],"r":2},{"n":"東枇杷島","k":"ひがしびわじま","c":"NH38","la":35.18981,"lo":136.87017,"km":70.7,"t":["名鉄犬山線"],"r":0},{"n":"西枇杷島","k":"にしびわじま","c":"NH39","la":35.19501,"lo":136.86569,"km":71.6,"r":0},{"n":"二ツ杁","k":"ふたついり","c":"NH40","la":35.19465,"lo":136.85958,"km":72.2,"r":1,"p":2},{"n":"新川橋","k":"しんかわばし","c":"NH41","la":35.1957,"lo":136.85199,"km":72.8,"r":0},{"n":"須ヶ口","k":"すかぐち","c":"NH42","la":35.19868,"lo":136.84623,"km":73.5,"t":["名鉄津島線"],"r":2,"p":3},{"n":"丸ノ内","k":"まるのうち","c":"NH43","la":35.20474,"lo":136.84193,"km":74.3,"r":0},{"n":"新清洲","k":"しんきよす","c":"NH44","la":35.21125,"lo":136.83561,"km":75.2,"r":2},{"n":"大里","k":"おおさと","c":"NH45","la":35.22622,"lo":136.81843,"km":77.5,"r":1,"p":2},{"n":"奥田","k":"おくだ","c":"NH46","la":35.23541,"lo":136.81092,"km":78.8,"r":0},{"n":"国府宮","k":"こうのみや","c":"NH47","la":35.25422,"lo":136.80296,"km":80.9,"r":4},{"n":"島氏永","k":"しまうじなが","c":"NH48","la":35.27078,"lo":136.80099,"km":82.9,"r":0},{"n":"妙興寺","k":"みょうこうじ","c":"NH49","la":35.28718,"lo":136.79823,"km":84.7,"r":0},{"n":"名鉄一宮","k":"めいてついちのみや","c":"NH50","la":35.30154,"lo":136.79722,"km":86.4,"t":["名鉄尾西線"],"r":4},{"n":"今伊勢","k":"いまいせ","c":"NH51","la":35.31836,"lo":136.78927,"km":88.3,"r":0},{"n":"石刀","k":"いわと","c":"NH52","la":35.3262,"lo":136.78541,"km":89.2,"r":0},{"n":"新木曽川","k":"しんきそがわ","c":"NH53","la":35.34205,"lo":136.77942,"km":91.2,"r":4},{"n":"黒田","k":"くろだ","c":"NH54","la":35.35021,"lo":136.7775,"km":92.1,"r":0},{"n":"木曽川堤","k":"きそがわづつみ","c":"NH55","la":35.36507,"lo":136.77049,"km":93.9,"r":0},{"n":"笠松","k":"かさまつ","c":"NH56","la":35.37467,"lo":136.76465,"km":95.1,"r":4},{"n":"岐南","k":"ぎなん","c":"NH57","la":35.38978,"lo":136.76925,"km":96.9,"r":0},{"n":"茶所","k":"ちゃじょ","c":"NH58","la":35.40208,"lo":136.76892,"km":98.3,"r":0},{"n":"加納","k":"かのう","c":"NH59","la":35.40517,"lo":136.76611,"km":98.7,"r":0},{"n":"名鉄岐阜","k":"めいてつぎふ","c":"NH60","la":35.41092,"lo":136.76023,"km":99.8,"r":4}],"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"H","name":"名古屋市営地下鉄 東山線","short":"東山線","op":"subway","color":"#F5A200","st":[{"n":"高畑","k":"たかばた","c":"H01","la":35.13916,"lo":136.85347,"km":0.0},{"n":"八田","k":"はった","c":"H02","la":35.14897,"lo":136.85226,"km":1.1,"t":["JR関西本線(名古屋～亀山)"]},{"n":"岩塚","k":"いわつか","c":"H03","la":35.15846,"lo":136.85441,"km":2.1},{"n":"中村公園","k":"なかむらこうえん","c":"H04","la":35.16783,"lo":136.85506,"km":3.2},{"n":"中村日赤","k":"なかむらにっせき","c":"H05","la":35.17238,"lo":136.86173,"km":4.0},{"n":"本陣","k":"ほんじん","c":"H06","la":35.17713,"lo":136.86678,"km":4.7},{"n":"亀島","k":"かめじま","c":"H07","la":35.17753,"lo":136.87676,"km":5.6},{"n":"名古屋","k":"なごや","c":"H08","la":35.17069,"lo":136.88164,"km":6.6,"t":["東海道新幹線","JR中央本線(名古屋～塩尻)","JR東海道本線(浜松～岐阜)","JR関西本線(名古屋～亀山)","西名古屋港線(あおなみ線)","地下鉄桜通線"]},{"n":"伏見","k":"ふしみ","c":"H09","la":35.16927,"lo":136.89743,"km":8.1,"t":["地下鉄鶴舞線"]},{"n":"栄","k":"さかえ","c":"H10","la":35.16999,"lo":136.90803,"km":9.1,"t":["地下鉄名城線"]},{"n":"新栄町","k":"しんさかえまち","c":"H11","la":35.17073,"lo":136.92038,"km":10.2},{"n":"千種","k":"ちくさ","c":"H12","la":35.17017,"lo":136.93067,"km":11.2,"t":["JR中央本線(名古屋～塩尻)"]},{"n":"今池","k":"いまいけ","c":"H13","la":35.16992,"lo":136.93733,"km":11.8,"t":["地下鉄桜通線"]},{"n":"池下","k":"いけした","c":"H14","la":35.16768,"lo":136.94649,"km":12.6},{"n":"覚王山","k":"かくおうざん","c":"H15","la":35.16656,"lo":136.95371,"km":13.3},{"n":"本山","k":"もとやま","c":"H16","la":35.16392,"lo":136.96344,"km":14.2,"t":["地下鉄名城線"]},{"n":"東山公園","k":"ひがしやまこうえん","c":"H17","la":35.16045,"lo":136.97287,"km":15.2},{"n":"星ヶ丘","k":"ほしがおか","c":"H18","la":35.1624,"lo":136.9851,"km":16.3},{"n":"一社","k":"いっしゃ","c":"H19","la":35.16823,"lo":136.99593,"km":17.5},{"n":"上社","k":"かみやしろ","c":"H20","la":35.17366,"lo":137.00708,"km":18.7},{"n":"本郷","k":"ほんごう","c":"H21","la":35.17545,"lo":137.01343,"km":19.3},{"n":"藤が丘","k":"ふじがおか","c":"H22","la":35.18211,"lo":137.02171,"km":20.6,"t":["東部丘陵線(リニモ)"]}]},{"id":"T","name":"名古屋市営地下鉄 鶴舞線","short":"鶴舞線","op":"subway","color":"#0E9CC8","st":[{"n":"上小田井","k":"かみおたい","c":"T01","la":35.22348,"lo":136.87694,"km":0.0,"t":["名鉄犬山線"]},{"n":"庄内緑地公園","k":"しょうないりょくちこうえん","c":"T02","la":35.21519,"lo":136.88696,"km":1.3},{"n":"庄内通","k":"しょうないどおり","c":"T03","la":35.20448,"lo":136.89104,"km":2.6},{"n":"浄心","k":"じょうしん","c":"T04","la":35.19221,"lo":136.89082,"km":4.0},{"n":"浅間町","k":"せんげんちょう","c":"T05","la":35.18384,"lo":136.89033,"km":4.9},{"n":"丸の内","k":"まるのうち","c":"T06","la":35.17346,"lo":136.89694,"km":6.4,"t":["地下鉄桜通線"]},{"n":"伏見","k":"ふしみ","c":"T07","la":35.16927,"lo":136.89743,"km":6.9,"t":["地下鉄東山線"]},{"n":"大須観音","k":"おおすかんのん","c":"T08","la":35.16073,"lo":136.89816,"km":7.8},{"n":"上前津","k":"かみまえづ","c":"T09","la":35.15748,"lo":136.90681,"km":8.9,"t":["地下鉄名城線"]},{"n":"鶴舞","k":"つるまい","c":"T10","la":35.15642,"lo":136.91744,"km":9.8,"t":["JR中央本線(名古屋～塩尻)"]},{"n":"荒畑","k":"あらはた","c":"T11","la":35.14965,"lo":136.92593,"km":11.0},{"n":"御器所","k":"ごきそ","c":"T12","la":35.14959,"lo":136.93415,"km":11.8,"t":["地下鉄桜通線"]},{"n":"川名","k":"かわな","c":"T13","la":35.1487,"lo":136.94872,"km":13.1},{"n":"いりなか","k":"いりなか","c":"T14","la":35.14323,"lo":136.95538,"km":14.0},{"n":"八事","k":"やごと","c":"T15","la":35.13695,"lo":136.96404,"km":15.1,"t":["地下鉄名城線"]},{"n":"塩釜口","k":"しおがまぐち","c":"T16","la":35.13243,"lo":136.97753,"km":16.4},{"n":"植田","k":"うえだ","c":"T17","la":35.12865,"lo":136.98788,"km":17.5},{"n":"原","k":"はら","c":"T18","la":35.12612,"lo":136.99671,"km":18.3},{"n":"平針","k":"ひらばり","c":"T19","la":35.12277,"lo":137.0069,"km":19.3},{"n":"赤池","k":"あかいけ","c":"T20","la":35.1211,"lo":137.01798,"km":20.4,"t":["名鉄豊田線"]}]},{"id":"M","name":"名古屋市営地下鉄 名城線","short":"名城線","op":"subway","color":"#8B5CF6","st":[{"n":"金山","k":"かなやま","c":"M01","la":35.14293,"lo":136.90052,"km":0.0,"t":["JR中央本線(名古屋～塩尻)","JR東海道本線(浜松～岐阜)","名鉄名古屋本線","名鉄常滑線","地下鉄名港線"]},{"n":"東別院","k":"ひがしべついん","c":"M02","la":35.15045,"lo":136.90482,"km":0.9},{"n":"上前津","k":"かみまえづ","c":"M03","la":35.15748,"lo":136.90681,"km":1.7,"t":["地下鉄鶴舞線"]},{"n":"矢場町","k":"やばちょう","c":"M04","la":35.16378,"lo":136.90899,"km":2.5},{"n":"栄","k":"さかえ","c":"M05","la":35.16999,"lo":136.90803,"km":3.2,"t":["地下鉄東山線"]},{"n":"久屋大通","k":"ひさやおおどおり","c":"M06","la":35.17378,"lo":136.90816,"km":3.6,"t":["地下鉄桜通線"]},{"n":"名古屋城","k":"なごやじょう","c":"M07","la":35.18156,"lo":136.90538,"km":4.5},{"n":"名城公園","k":"めいじょうこうえん","c":"M08","la":35.19053,"lo":136.90475,"km":5.5},{"n":"黒川","k":"くろかわ","c":"M09","la":35.19718,"lo":136.91018,"km":6.6},{"n":"志賀本通","k":"しがほんどおり","c":"M10","la":35.19628,"lo":136.92121,"km":7.6},{"n":"平安通","k":"へいあんどおり","c":"M11","la":35.19593,"lo":136.92978,"km":8.4,"t":["地下鉄上飯田線"]},{"n":"大曽根","k":"おおぞね","c":"M12","la":35.19151,"lo":136.93716,"km":9.3,"t":["JR中央本線(名古屋～塩尻)","名鉄瀬戸線","ゆとりーとライン"]},{"n":"ナゴヤドーム前矢田","k":"なごやどーむまえやだ","c":"M13","la":35.19069,"lo":136.94526,"km":10.1,"t":["ゆとりーとライン"]},{"n":"砂田橋","k":"すなだばし","c":"M14","la":35.18886,"lo":136.954,"km":10.9,"t":["ゆとりーとライン"]},{"n":"茶屋ヶ坂","k":"ちゃやがさか","c":"M15","la":35.18461,"lo":136.96225,"km":11.8},{"n":"自由ヶ丘","k":"じゆうがおか","c":"M16","la":35.17496,"lo":136.96676,"km":13.0},{"n":"本山","k":"もとやま","c":"M17","la":35.16392,"lo":136.96344,"km":14.3,"t":["地下鉄東山線"]},{"n":"名古屋大学","k":"なごやだいがく","c":"M18","la":35.15426,"lo":136.96658,"km":15.4},{"n":"八事日赤","k":"やごとにっせき","c":"M19","la":35.14456,"lo":136.96501,"km":16.5},{"n":"八事","k":"やごと","c":"M20","la":35.13695,"lo":136.96404,"km":17.5,"t":["地下鉄鶴舞線"]},{"n":"総合リハビリセンター","k":"そうごうりはびりせんたー","c":"M21","la":35.13054,"lo":136.95452,"km":18.8},{"n":"瑞穂運動場東","k":"みずほうんどうじょうひがし","c":"M22","la":35.12317,"lo":136.94869,"km":19.7},{"n":"新瑞橋","k":"あらたまばし","c":"M23","la":35.11773,"lo":136.9366,"km":21.0,"t":["地下鉄桜通線"]},{"n":"妙音通","k":"みょうおんどおり","c":"M24","la":35.11713,"lo":136.92954,"km":21.7},{"n":"堀田","k":"ほりた","c":"M25","la":35.11664,"lo":136.92168,"km":22.4},{"n":"熱田神宮伝馬町","k":"あつたじんぐうてんまちょう","c":"M26","la":35.12074,"lo":136.91038,"km":23.6},{"n":"熱田神宮西","k":"あつたじんぐうにし","c":"M27","la":35.12796,"lo":136.90677,"km":24.6},{"n":"西高蔵","k":"にしたかくら","c":"M28","la":35.13462,"lo":136.90177,"km":25.4}],"circ":26.4},{"id":"S","name":"名古屋市営地下鉄 桜通線","short":"桜通線","op":"subway","color":"#CE1126","st":[{"n":"太閤通","k":"たいこうどおり","c":"S01","la":35.16761,"lo":136.87313,"km":0.0},{"n":"名古屋","k":"なごや","c":"S02","la":35.17069,"lo":136.88164,"km":0.9},{"n":"国際センター","k":"こくさいせんたー","c":"S03","la":35.17213,"lo":136.88938,"km":1.6},{"n":"丸の内","k":"まるのうち","c":"S04","la":35.17346,"lo":136.89694,"km":2.3},{"n":"久屋大通","k":"ひさやおおどおり","c":"S05","la":35.17378,"lo":136.90816,"km":3.3},{"n":"高岳","k":"たかおか","c":"S06","la":35.17406,"lo":136.91566,"km":4.0},{"n":"車道","k":"くるまみち","c":"S07","la":35.17351,"lo":136.92954,"km":5.3},{"n":"今池","k":"いまいけ","c":"S08","la":35.16992,"lo":136.93733,"km":6.1},{"n":"吹上","k":"ふきあげ","c":"S09","la":35.15879,"lo":136.93538,"km":7.4},{"n":"御器所","k":"ごきそ","c":"S10","la":35.14959,"lo":136.93415,"km":8.4},{"n":"桜山","k":"さくらやま","c":"S11","la":35.1397,"lo":136.93332,"km":9.5},{"n":"瑞穂区役所","k":"みずほくやくしょ","c":"S12","la":35.13179,"lo":136.93443,"km":10.4},{"n":"瑞穂運動場西","k":"みずほうんどうじょうにし","c":"S13","la":35.12495,"lo":136.93548,"km":11.2},{"n":"新瑞橋","k":"あらたまばし","c":"S14","la":35.11773,"lo":136.9366,"km":12.0},{"n":"桜本町","k":"さくらほんまち","c":"S15","la":35.109,"lo":136.93676,"km":13.0},{"n":"鶴里","k":"つるさと","c":"S16","la":35.10574,"lo":136.94343,"km":13.8},{"n":"野並","k":"のなみ","c":"S17","la":35.10236,"lo":136.95549,"km":15.0},{"n":"鳴子北","k":"なるこきた","c":"S18","la":35.10268,"lo":136.96621,"km":16.0},{"n":"相生山","k":"あいおいやま","c":"S19","la":35.10254,"lo":136.97621,"km":16.9},{"n":"神沢","k":"かみさわ","c":"S20","la":35.09852,"lo":136.98954,"km":18.3},{"n":"徳重","k":"とくしげ","c":"S21","la":35.09449,"lo":136.99815,"km":19.1}]},{"id":"E","name":"名古屋市営地下鉄 名港線","short":"名港線","op":"subway","color":"#7C5AC6","st":[{"n":"金山","k":"かなやま","c":"E01","la":35.14293,"lo":136.90052,"km":0.0},{"n":"日比野","k":"ひびの","c":"E02","la":35.13271,"lo":136.89312,"km":1.4},{"n":"六番町","k":"ろくばんちょう","c":"E03","la":35.12462,"lo":136.88871,"km":2.4},{"n":"東海通","k":"とうかいどおり","c":"E04","la":35.11339,"lo":136.88734,"km":3.7},{"n":"港区役所","k":"みなとくやくしょ","c":"E05","la":35.10574,"lo":136.88455,"km":4.6},{"n":"築地口","k":"つきじぐち","c":"E06","la":35.09935,"lo":136.88316,"km":5.3},{"n":"名古屋港","k":"なごやこう","c":"E07","la":35.09348,"lo":136.88197,"km":6.0}]},{"id":"K","name":"名古屋市営地下鉄 上飯田線","short":"上飯田線","op":"subway","color":"#E85298","st":[{"n":"上飯田","k":"かみいいだ","c":"K01","la":35.20385,"lo":136.92964,"km":0.0},{"n":"平安通","k":"へいあんどおり","c":"K02","la":35.19593,"lo":136.92978,"km":0.8}]},{"id":"MT-TA","name":"名鉄常滑線","short":"常滑線","op":"meitetsu","grp":"名鉄","color":"#E0382D","st":[{"n":"神宮前","k":"じんぐうまえ","c":"MT-TA01","la":35.1257,"lo":136.91257,"km":0.0,"r":3,"kmEst":true,"cEst":true,"no":"NH33"},{"n":"豊田本町","k":"とよだほんまち","c":"MT-TA02","la":35.11362,"lo":136.91082,"km":1.4,"r":0,"cEst":true,"no":"TA01"},{"n":"道徳","k":"どうとく","c":"MT-TA03","la":35.1057,"lo":136.90952,"km":2.4,"r":0,"cEst":true,"no":"TA02"},{"n":"大江","k":"おおえ","c":"MT-TA04","la":35.0933,"lo":136.9128,"km":3.8,"r":2,"cEst":true,"no":"TA03"},{"n":"大同町","k":"だいどうちょう","c":"MT-TA05","la":35.08026,"lo":136.90935,"km":5.3,"r":1,"cEst":true,"no":"TA04"},{"n":"柴田","k":"しばた","c":"MT-TA06","la":35.07282,"lo":136.90908,"km":6.1,"r":0,"cEst":true,"no":"TA05"},{"n":"名和","k":"なわ","c":"MT-TA07","la":35.06092,"lo":136.91169,"km":7.5,"r":0,"cEst":true,"no":"TA06"},{"n":"聚楽園","k":"しゅうらくえん","c":"MT-TA08","la":35.04282,"lo":136.90306,"km":9.7,"r":1,"cEst":true,"no":"TA07"},{"n":"新日鉄前","k":"しんにってつまえ","c":"MT-TA09","la":35.03514,"lo":136.89949,"km":10.6,"r":0,"cEst":true,"no":"TA08"},{"n":"太田川","k":"おおたがわ","c":"MT-TA10","la":35.0203,"lo":136.89257,"km":12.3,"r":3,"cEst":true,"no":"TA09"},{"n":"尾張横須賀","k":"おわりよこすか","c":"MT-TA11","la":35.01001,"lo":136.88555,"km":13.7,"r":3,"cEst":true,"no":"TA10"},{"n":"寺本","k":"てらもと","c":"MT-TA12","la":35.0002,"lo":136.87544,"km":15.1,"r":2,"cEst":true,"no":"TA11"},{"n":"朝倉","k":"あさくら","c":"MT-TA13","la":34.99386,"lo":136.86345,"km":16.4,"r":3,"cEst":true,"no":"TA12"},{"n":"古見","k":"こみ","c":"MT-TA14","la":34.98774,"lo":136.85677,"km":17.3,"r":2,"cEst":true,"no":"TA13"},{"n":"長浦","k":"ながうら","c":"MT-TA15","la":34.9784,"lo":136.84781,"km":18.7,"r":0,"cEst":true,"no":"TA14"},{"n":"日長","k":"ひなが","c":"MT-TA16","la":34.96166,"lo":136.83217,"km":21.0,"r":0,"cEst":true,"no":"TA15"},{"n":"新舞子","k":"しんまいこ","c":"MT-TA17","la":34.94973,"lo":136.8286,"km":22.5,"r":3,"cEst":true,"no":"TA16"},{"n":"大野町","k":"おおのまち","c":"MT-TA18","la":34.93543,"lo":136.8275,"km":24.1,"r":2,"cEst":true,"no":"TA17"},{"n":"西ノ口","k":"にしのくち","c":"MT-TA19","la":34.9246,"lo":136.82676,"km":25.4,"r":0,"cEst":true,"no":"TA18"},{"n":"蒲池","k":"かばいけ","c":"MT-TA20","la":34.91528,"lo":136.82565,"km":26.4,"r":0,"cEst":true,"no":"TA19"},{"n":"榎戸","k":"えのきど","c":"MT-TA21","la":34.90495,"lo":136.8282,"km":27.5,"r":0,"cEst":true,"no":"TA20"},{"n":"多屋","k":"たや","c":"MT-TA22","la":34.89702,"lo":136.83069,"km":28.6,"r":0,"cEst":true,"no":"TA21"},{"n":"常滑","k":"とこなめ","c":"MT-TA23","la":34.89117,"lo":136.83511,"km":29.3,"r":3,"cEst":true,"no":"TA22"}],"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-KJ","name":"名鉄空港線","short":"空港線","op":"meitetsu","grp":"名鉄","color":"#F08300","st":[{"n":"常滑","k":"とこなめ","c":"MT-KJ01","la":34.89117,"lo":136.83511,"km":0.0,"r":3,"cEst":true,"no":"TA22"},{"n":"りんくう常滑","k":"りんくうとこなめ","c":"MT-KJ02","la":34.87962,"lo":136.8281,"km":1.6,"r":2,"cEst":true,"no":"TA23"},{"n":"中部国際空港","k":"ちゅうぶこくさいくうこう","c":"MT-KJ03","la":34.8599,"lo":136.81598,"km":4.2,"r":3,"cEst":true,"no":"TA24"}],"surcharge":{"0|1":30,"0|2":80,"1|2":50},"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-KW","name":"名鉄河和線","short":"河和線","op":"meitetsu","grp":"名鉄","color":"#D6336C","st":[{"n":"太田川","k":"おおたがわ","c":"MT-KW01","la":35.0203,"lo":136.89257,"km":0.0,"r":3,"kmEst":true,"cEst":true,"no":"TA09"},{"n":"高横須賀","k":"たかよこすか","c":"MT-KW02","la":35.00965,"lo":136.89373,"km":1.3,"r":0,"cEst":true,"no":"KC01"},{"n":"加木屋中ノ池","k":"かぎやなかのいけ","c":"MT-KW03","la":35.00014,"lo":136.90235,"km":2.6,"r":0,"cEst":true,"no":"KC02"},{"n":"南加木屋","k":"みなみかぎや","c":"MT-KW04","la":34.98927,"lo":136.90686,"km":4.1,"r":2,"cEst":true,"no":"KC03"},{"n":"八幡新田","k":"やわたしんでん","c":"MT-KW05","la":34.97378,"lo":136.91262,"km":5.9,"r":0,"cEst":true,"no":"KC04"},{"n":"巽ヶ丘","k":"たつみがおか","c":"MT-KW06","la":34.96229,"lo":136.91567,"km":7.1,"r":2,"cEst":true,"no":"KC05"},{"n":"白沢","k":"しらさわ","c":"MT-KW07","la":34.95508,"lo":136.91538,"km":7.9,"r":0,"cEst":true,"no":"KC06"},{"n":"坂部","k":"さかべ","c":"MT-KW08","la":34.94097,"lo":136.91672,"km":9.5,"r":0,"cEst":true,"no":"KC07"},{"n":"阿久比","k":"あぐい","c":"MT-KW09","la":34.9313,"lo":136.91845,"km":10.6,"r":3,"cEst":true,"no":"KC08"},{"n":"植大","k":"うえだい","c":"MT-KW10","la":34.91743,"lo":136.92345,"km":12.2,"r":0,"cEst":true,"no":"KC09"},{"n":"半田口","k":"はんだぐち","c":"MT-KW11","la":34.90909,"lo":136.92547,"km":13.2,"r":0,"cEst":true,"no":"KC10"},{"n":"住吉町","k":"すみよしちょう","c":"MT-KW12","la":34.9021,"lo":136.92574,"km":14.0,"r":2,"cEst":true,"no":"KC11"},{"n":"知多半田","k":"ちたはんだ","c":"MT-KW13","la":34.89399,"lo":136.92588,"km":14.8,"r":3,"cEst":true,"no":"KC12"},{"n":"成岩","k":"ならわ","c":"MT-KW14","la":34.8862,"lo":136.92184,"km":15.8,"r":2,"cEst":true,"no":"KC13"},{"n":"青山","k":"あおやま","c":"MT-KW15","la":34.87874,"lo":136.91729,"km":16.8,"r":3,"cEst":true,"no":"KC14"},{"n":"上ゲ","k":"あげ","c":"MT-KW16","la":34.85833,"lo":136.91645,"km":19.0,"r":2,"cEst":true,"no":"KC15"},{"n":"知多武豊","k":"ちたたけとよ","c":"MT-KW17","la":34.85062,"lo":136.91654,"km":19.8,"r":3,"cEst":true,"no":"KC16"},{"n":"富貴","k":"ふき","c":"MT-KW18","la":34.82932,"lo":136.91676,"km":22.3,"r":3,"cEst":true,"no":"KC17"},{"n":"河和口","k":"こうわぐち","c":"MT-KW19","la":34.79725,"lo":136.91898,"km":25.8,"r":3,"cEst":true,"no":"KC18"},{"n":"河和","k":"こうわ","c":"MT-KW20","la":34.77802,"lo":136.91226,"km":28.8,"r":3,"cEst":true,"no":"KC19"}],"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-CS","name":"名鉄知多新線","short":"知多新線","op":"meitetsu","grp":"名鉄","color":"#C2255C","st":[{"n":"富貴","k":"ふき","c":"MT-CS01","la":34.82932,"lo":136.91676,"km":0.0,"r":3,"cEst":true,"no":"KC17"},{"n":"上野間","k":"かみのま","c":"MT-CS02","la":34.80727,"lo":136.86681,"km":5.8,"r":3,"cEst":true,"no":"KC20"},{"n":"美浜緑苑","k":"みはまりょくえん","c":"MT-CS03","la":34.80029,"lo":136.86309,"km":6.7,"r":3,"cEst":true,"no":"KC21"},{"n":"知多奥田","k":"ちたおくだ","c":"MT-CS04","la":34.78719,"lo":136.86449,"km":8.1,"r":3,"cEst":true,"no":"KC22"},{"n":"野間","k":"のま","c":"MT-CS05","la":34.7723,"lo":136.86075,"km":9.8,"r":3,"cEst":true,"no":"KC23"},{"n":"内海","k":"うつみ","c":"MT-CS06","la":34.74469,"lo":136.87525,"km":13.9,"r":3,"cEst":true,"no":"KC24"}],"surcharge":{"0|1":40,"0|2":40,"0|3":50,"0|4":60,"0|5":70,"1|2":20,"1|3":20,"1|4":30,"1|5":50,"2|3":20,"2|4":30,"2|5":40,"3|4":20,"3|5":40,"4|5":30},"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-ST","name":"名鉄瀬戸線","short":"瀬戸線","op":"meitetsu","grp":"名鉄","color":"#1C7ED6","st":[{"n":"栄町","k":"さかえまち","c":"MT-ST01","la":35.17048,"lo":136.90884,"km":0.0,"r":2,"kmEst":true,"cEst":true,"no":"ST01"},{"n":"東大手","k":"ひがしおおて","c":"MT-ST02","la":35.18345,"lo":136.90848,"km":1.5,"r":2,"cEst":true,"no":"ST02"},{"n":"清水","k":"しみず","c":"MT-ST03","la":35.18709,"lo":136.91394,"km":2.2,"r":0,"cEst":true,"no":"ST03"},{"n":"尼ヶ坂","k":"あまがさか","c":"MT-ST04","la":35.1878,"lo":136.91917,"km":2.7,"r":0,"cEst":true,"no":"ST04"},{"n":"森下","k":"もりした","c":"MT-ST05","la":35.18824,"lo":136.92929,"km":3.6,"r":0,"cEst":true,"no":"ST05"},{"n":"大曽根","k":"おおぞね","c":"MT-ST06","la":35.19159,"lo":136.93695,"km":4.6,"r":2,"cEst":true,"no":"ST06"},{"n":"矢田","k":"やだ","c":"MT-ST07","la":35.19366,"lo":136.94799,"km":5.9,"r":0,"cEst":true,"no":"ST07"},{"n":"守山自衛隊前","k":"もりやまじえいたいまえ","c":"MT-ST08","la":35.19619,"lo":136.95757,"km":7.0,"r":0,"cEst":true,"no":"ST08"},{"n":"瓢箪山","k":"ひょうたんやま","c":"MT-ST09","la":35.19714,"lo":136.96445,"km":7.6,"r":0,"cEst":true,"no":"ST09"},{"n":"小幡","k":"おばた","c":"MT-ST10","la":35.20007,"lo":136.97556,"km":8.6,"r":2,"cEst":true,"no":"ST10"},{"n":"喜多山","k":"きたやま","c":"MT-ST11","la":35.20506,"lo":136.98811,"km":9.9,"r":2,"cEst":true,"no":"ST11"},{"n":"大森・金城学院前","k":"おおもり・きんじょうがくいんまえ","c":"MT-ST12","la":35.20694,"lo":136.99659,"km":10.7,"r":2,"cEst":true,"no":"ST12"},{"n":"印場","k":"いんば","c":"MT-ST13","la":35.21102,"lo":137.01104,"km":12.2,"r":1,"cEst":true,"no":"ST13"},{"n":"旭前","k":"あさひまえ","c":"MT-ST14","la":35.21416,"lo":137.01975,"km":13.1,"r":1,"cEst":true,"no":"ST14"},{"n":"尾張旭","k":"おわりあさひ","c":"MT-ST15","la":35.21676,"lo":137.03625,"km":14.7,"r":2,"cEst":true,"no":"ST15"},{"n":"三郷","k":"さんごう","c":"MT-ST16","la":35.21623,"lo":137.05237,"km":16.1,"r":2,"cEst":true,"no":"ST16"},{"n":"水野","k":"みずの","c":"MT-ST17","la":35.2242,"lo":137.06942,"km":18.0,"r":2,"cEst":true,"no":"ST17"},{"n":"新瀬戸","k":"しんせと","c":"MT-ST18","la":35.22553,"lo":137.07769,"km":18.7,"r":2,"cEst":true,"no":"ST18"},{"n":"瀬戸市役所前","k":"せとしやくしょまえ","c":"MT-ST19","la":35.22499,"lo":137.08421,"km":19.4,"r":2,"cEst":true,"no":"ST19"},{"n":"尾張瀬戸","k":"おわりせと","c":"MT-ST20","la":35.22489,"lo":137.09674,"km":20.6,"r":2,"cEst":true,"no":"ST20"}],"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-TU","name":"名鉄津島線","short":"津島線","op":"meitetsu","grp":"名鉄","color":"#E8590C","st":[{"n":"須ヶ口","k":"すかぐち","c":"MT-TU01","la":35.19893,"lo":136.84575,"km":0.0,"r":3,"kmEst":true,"cEst":true,"no":"NH42"},{"n":"甚目寺","k":"じもくじ","c":"MT-TU02","la":35.19595,"lo":136.82585,"km":2.0,"r":3,"cEst":true,"no":"TB01"},{"n":"七宝","k":"しっぽう","c":"MT-TU03","la":35.19579,"lo":136.80596,"km":3.7,"r":0,"cEst":true,"no":"TB02"},{"n":"木田","k":"きだ","c":"MT-TU04","la":35.1953,"lo":136.78801,"km":5.4,"r":3,"cEst":true,"no":"TB03"},{"n":"青塚","k":"あおつか","c":"MT-TU05","la":35.19871,"lo":136.76693,"km":7.3,"r":0,"cEst":true,"no":"TB04"},{"n":"勝幡","k":"しょばた","c":"MT-TU06","la":35.19524,"lo":136.75037,"km":9.0,"r":3,"cEst":true,"no":"TB05"},{"n":"藤浪","k":"ふじなみ","c":"MT-TU07","la":35.18883,"lo":136.73891,"km":10.2,"r":0,"cEst":true,"no":"TB06"},{"n":"津島","k":"つしま","c":"MT-TU08","la":35.17803,"lo":136.73107,"km":11.8,"r":3,"cEst":true,"no":"TB07"}],"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-BI","name":"名鉄尾西線","short":"尾西線","op":"meitetsu","grp":"名鉄","color":"#9C36B5","st":[{"n":"弥富","k":"やとみ","c":"MT-BI01","la":35.11406,"lo":136.72584,"km":0.0,"r":0,"kmEst":true,"cEst":true,"no":"TB11"},{"n":"五ノ三","k":"ごのさん","c":"MT-BI02","la":35.12935,"lo":136.71143,"km":2.5,"r":0,"cEst":true,"no":"TB10"},{"n":"佐屋","k":"さや","c":"MT-BI03","la":35.14755,"lo":136.71668,"km":4.6,"r":3,"cEst":true,"no":"TB09"},{"n":"日比野","k":"ひびの","c":"MT-BI04","la":35.16367,"lo":136.7286,"km":6.6,"r":3,"cEst":true,"no":"TB08"},{"n":"津島","k":"つしま","c":"MT-BI05","la":35.17803,"lo":136.73107,"km":8.2,"r":3,"cEst":true,"no":"TB07"},{"n":"町方","k":"まちかた","c":"MT-BI06","la":35.18992,"lo":136.72704,"km":9.6,"r":0,"cEst":true,"no":"BS01"},{"n":"六輪","k":"ろくわ","c":"MT-BI07","la":35.20221,"lo":136.72915,"km":11.1,"r":0,"cEst":true,"no":"BS02"},{"n":"渕高","k":"ふちだか","c":"MT-BI08","la":35.21395,"lo":136.72735,"km":12.4,"r":0,"cEst":true,"no":"BS03"},{"n":"丸渕","k":"まるぶち","c":"MT-BI09","la":35.22253,"lo":136.72899,"km":13.4,"r":0,"cEst":true,"no":"BS04"},{"n":"上丸渕","k":"かみまるぶち","c":"MT-BI10","la":35.23387,"lo":136.73252,"km":14.7,"r":0,"cEst":true,"no":"BS05"},{"n":"森上","k":"もりかみ","c":"MT-BI11","la":35.24761,"lo":136.73695,"km":16.2,"r":0,"cEst":true,"no":"BS06"},{"n":"山崎","k":"やまざき","c":"MT-BI12","la":35.25644,"lo":136.73944,"km":17.3,"r":0,"cEst":true,"no":"BS07"},{"n":"玉野","k":"たまの","c":"MT-BI13","la":35.26619,"lo":136.7478,"km":18.7,"r":0,"cEst":true,"no":"BS08"},{"n":"萩原","k":"はぎわら","c":"MT-BI14","la":35.27717,"lo":136.7577,"km":20.2,"r":0,"cEst":true,"no":"BS09"},{"n":"二子","k":"ふたご","c":"MT-BI15","la":35.28376,"lo":136.76569,"km":21.3,"r":0,"cEst":true,"no":"BS10"},{"n":"苅安賀","k":"かりやすか","c":"MT-BI16","la":35.28714,"lo":136.77826,"km":22.5,"r":0,"cEst":true,"no":"BS11"},{"n":"観音寺","k":"かんのんじ","c":"MT-BI17","la":35.28972,"lo":136.78617,"km":23.2,"r":0,"cEst":true,"no":"BS12"},{"n":"名鉄一宮","k":"めいてついちのみや","c":"MT-BI18","la":35.30208,"lo":136.79698,"km":25.3,"r":0,"cEst":true,"no":"NH50"},{"n":"西一宮","k":"にしいちのみや","c":"MT-BI19","la":35.30748,"lo":136.79214,"km":26.0,"r":0,"cEst":true,"no":"BS21"},{"n":"開明","k":"かいめい","c":"MT-BI20","la":35.31927,"lo":136.77411,"km":28.1,"r":0,"cEst":true,"no":"BS22"},{"n":"奥町","k":"おくちょう","c":"MT-BI21","la":35.32435,"lo":136.7611,"km":29.4,"r":0,"cEst":true,"no":"BS23"},{"n":"玉ノ井","k":"たまのい","c":"MT-BI22","la":35.33485,"lo":136.75797,"km":30.9,"r":0,"cEst":true,"no":"BS24"}],"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-IN","name":"名鉄犬山線","short":"犬山線","op":"meitetsu","grp":"名鉄","color":"#2F9E44","st":[{"n":"下小田井","k":"しもおたい","c":"MT-IN01","la":35.20243,"lo":136.87081,"km":0.0,"r":0,"kmEst":true,"cEst":true,"no":"IY01"},{"n":"中小田井","k":"なかおたい","c":"MT-IN02","la":35.21475,"lo":136.87685,"km":1.4,"r":0,"cEst":true,"no":"IY02"},{"n":"上小田井","k":"かみおたい","c":"MT-IN03","la":35.2233,"lo":136.87702,"km":2.5,"r":2,"cEst":true,"no":"IY03"},{"n":"西春","k":"にしはる","c":"MT-IN04","la":35.24478,"lo":136.87129,"km":4.9,"r":2,"cEst":true,"no":"IY04"},{"n":"徳重・名古屋芸大","k":"とくしげ・なごやげいだい","c":"MT-IN05","la":35.25575,"lo":136.87336,"km":6.3,"r":0,"cEst":true,"no":"IY05"},{"n":"大山寺","k":"たいさんじ","c":"MT-IN06","la":35.26331,"lo":136.87479,"km":7.1,"r":0,"cEst":true,"no":"IY06"},{"n":"岩倉","k":"いわくら","c":"MT-IN07","la":35.27797,"lo":136.87357,"km":8.7,"r":4,"cEst":true,"no":"IY07"},{"n":"石仏","k":"いしぼとけ","c":"MT-IN08","la":35.29554,"lo":136.87117,"km":10.8,"r":1,"cEst":true,"no":"IY08"},{"n":"布袋","k":"ほてい","c":"MT-IN09","la":35.31706,"lo":136.87293,"km":13.2,"r":2,"cEst":true,"no":"IY09"},{"n":"江南","k":"こうなん","c":"MT-IN10","la":35.3347,"lo":136.87206,"km":15.2,"r":4,"cEst":true,"no":"IY10"},{"n":"柏森","k":"かしわもり","c":"MT-IN11","la":35.34482,"lo":136.90025,"km":18.0,"r":4,"cEst":true,"no":"IY11"},{"n":"扶桑","k":"ふそう","c":"MT-IN12","la":35.35965,"lo":136.91609,"km":20.2,"r":2,"cEst":true,"no":"IY12"},{"n":"木津用水","k":"こつようすい","c":"MT-IN13","la":35.36684,"lo":136.92602,"km":21.6,"r":1,"cEst":true,"no":"IY13"},{"n":"犬山口","k":"いぬやまぐち","c":"MT-IN14","la":35.37423,"lo":136.93997,"km":23.0,"r":1,"cEst":true,"no":"IY14"},{"n":"犬山","k":"いぬやま","c":"MT-IN15","la":35.3799,"lo":136.94554,"km":23.9,"r":4,"cEst":true,"no":"IY15"},{"n":"犬山遊園","k":"いぬやまゆうえん","c":"MT-IN16","la":35.39041,"lo":136.94693,"km":25.1,"r":4,"cEst":true,"no":"IY16"},{"n":"新鵜沼","k":"しんうぬま","c":"MT-IN17","la":35.39683,"lo":136.94426,"km":25.8,"r":4,"cEst":true,"no":"IY17"}],"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-KO","name":"名鉄小牧線","short":"小牧線","op":"meitetsu","grp":"名鉄","color":"#0C8599","st":[{"n":"上飯田","k":"かみいいだ","c":"MT-KO01","la":35.20361,"lo":136.92968,"km":0.0,"r":0,"kmEst":true,"cEst":true,"no":"KM13"},{"n":"味鋺","k":"あじま","c":"MT-KO02","la":35.22281,"lo":136.93627,"km":2.3,"r":0,"cEst":true,"no":"KM12"},{"n":"味美","k":"あじよし","c":"MT-KO03","la":35.23511,"lo":136.93718,"km":3.7,"r":0,"cEst":true,"no":"KM11"},{"n":"春日井","k":"かすがい","c":"MT-KO04","la":35.25036,"lo":136.93624,"km":5.4,"r":0,"cEst":true,"no":"KM10"},{"n":"牛山","k":"うしやま","c":"MT-KO05","la":35.26406,"lo":136.93134,"km":6.9,"r":0,"cEst":true,"no":"KM09"},{"n":"間内","k":"まない","c":"MT-KO06","la":35.2716,"lo":136.93119,"km":7.8,"r":0,"cEst":true,"no":"KM08"},{"n":"小牧口","k":"こまきぐち","c":"MT-KO07","la":35.28175,"lo":136.9277,"km":9.0,"r":0,"cEst":true,"no":"KM07"},{"n":"小牧","k":"こまき","c":"MT-KO08","la":35.28896,"lo":136.92799,"km":9.8,"r":0,"cEst":true,"no":"KM06"},{"n":"小牧原","k":"こまきはら","c":"MT-KO09","la":35.29868,"lo":136.93534,"km":11.3,"r":0,"cEst":true,"no":"KM05"},{"n":"味岡","k":"あじおか","c":"MT-KO10","la":35.30938,"lo":136.94034,"km":12.4,"r":0,"cEst":true,"no":"KM04"},{"n":"田県神社前","k":"たがたじんじゃまえ","c":"MT-KO11","la":35.3174,"lo":136.94378,"km":13.3,"r":0,"cEst":true,"no":"KM03"},{"n":"楽田","k":"がくでん","c":"MT-KO12","la":35.33056,"lo":136.95009,"km":14.9,"r":0,"cEst":true,"no":"KM02"},{"n":"羽黒","k":"はぐろ","c":"MT-KO13","la":35.35161,"lo":136.95252,"km":17.2,"r":0,"cEst":true,"no":"KM01"},{"n":"犬山","k":"いぬやま","c":"MT-KO14","la":35.3799,"lo":136.94554,"km":20.6,"r":0,"cEst":true,"no":"IY15"}],"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-HI","name":"名鉄広見線","short":"広見線","op":"meitetsu","grp":"名鉄","color":"#5F3DC4","st":[{"n":"犬山","k":"いぬやま","c":"MT-HI01","la":35.3799,"lo":136.94554,"km":0.0,"r":0,"kmEst":true,"cEst":true,"no":"IY15"},{"n":"富岡前","k":"とみおかまえ","c":"MT-HI02","la":35.37953,"lo":136.96218,"km":1.9,"r":0,"cEst":true,"no":"HM01"},{"n":"善師野","k":"ぜんじの","c":"MT-HI03","la":35.3898,"lo":136.98005,"km":4.0,"r":0,"cEst":true,"no":"HM02"},{"n":"西可児","k":"にしかに","c":"MT-HI04","la":35.40472,"lo":137.01066,"km":7.7,"r":0,"cEst":true,"no":"HM03"},{"n":"可児川","k":"かにがわ","c":"MT-HI05","la":35.41825,"lo":137.01846,"km":9.7,"r":0,"cEst":true,"no":"HM04"},{"n":"日本ライン今渡","k":"にほんらいんいまわたり","c":"MT-HI06","la":35.43231,"lo":137.03693,"km":12.2,"r":0,"cEst":true,"no":"HM05"},{"n":"新可児","k":"しんかに","c":"MT-HI07","la":35.42327,"lo":137.05568,"km":14.9,"r":0,"cEst":true,"no":"HM06"},{"n":"明智","k":"あけち","c":"MT-HI08","la":35.43335,"lo":137.08772,"km":18.4,"r":0,"cEst":true,"no":"HM07"},{"n":"顔戸","k":"ごうど","c":"MT-HI09","la":35.43453,"lo":137.10514,"km":20.0,"r":0,"cEst":true,"no":"HM08"},{"n":"御嵩口","k":"みたけぐち","c":"MT-HI10","la":35.43131,"lo":137.12174,"km":21.7,"r":0,"cEst":true,"no":"HM09"},{"n":"御嵩","k":"みたけ","c":"MT-HI11","la":35.42973,"lo":137.12754,"km":22.3,"r":0,"cEst":true,"no":"HM10"}],"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-GA","name":"名鉄蒲郡線","short":"蒲郡線","op":"meitetsu","grp":"名鉄","color":"#0B7285","st":[{"n":"蒲郡","k":"がまごおり","c":"MT-GA01","la":34.82277,"lo":137.22568,"km":0.0,"r":0,"kmEst":true,"cEst":true,"no":"GN22"},{"n":"蒲郡競艇場前","k":"がまごおりきょうていじょうまえ","c":"MT-GA02","la":34.82543,"lo":137.20212,"km":2.3,"r":0,"cEst":true,"no":"GN21"},{"n":"三河鹿島","k":"みかわかしま","c":"MT-GA03","la":34.81331,"lo":137.1897,"km":4.1,"r":0,"cEst":true,"no":"GN20"},{"n":"形原","k":"かたはら","c":"MT-GA04","la":34.79841,"lo":137.18464,"km":5.9,"r":0,"cEst":true,"no":"GN19"},{"n":"西浦","k":"にしうら","c":"MT-GA05","la":34.78997,"lo":137.17871,"km":7.1,"r":0,"cEst":true,"no":"GN18"},{"n":"こどもの国","k":"こどものくに","c":"MT-GA06","la":34.7886,"lo":137.16274,"km":8.7,"r":0,"cEst":true,"no":"GN17"},{"n":"東幡豆","k":"ひがしはず","c":"MT-GA07","la":34.78955,"lo":137.14593,"km":10.6,"r":0,"cEst":true,"no":"GN16"},{"n":"西幡豆","k":"にしはず","c":"MT-GA08","la":34.79248,"lo":137.12135,"km":12.9,"r":0,"cEst":true,"no":"GN15"},{"n":"三河鳥羽","k":"みかわとば","c":"MT-GA09","la":34.79331,"lo":137.10505,"km":14.4,"r":0,"cEst":true,"no":"GN14"},{"n":"吉良吉田","k":"きらよしだ","c":"MT-GA10","la":34.79428,"lo":137.07125,"km":17.6,"r":3,"cEst":true,"no":"GN13"}],"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-NI","name":"名鉄西尾線","short":"西尾線","op":"meitetsu","grp":"名鉄","color":"#66A80F","st":[{"n":"新安城","k":"しんあんじょう","c":"MT-NI01","la":34.9869,"lo":137.08551,"km":0.0,"r":3,"kmEst":true,"cEst":true,"no":"NH17"},{"n":"北安城","k":"きたあんじょう","c":"MT-NI02","la":34.96465,"lo":137.09215,"km":2.6,"r":0,"cEst":true,"no":"GN01"},{"n":"南安城","k":"みなみあんじょう","c":"MT-NI03","la":34.9519,"lo":137.0926,"km":4.0,"r":3,"cEst":true,"no":"GN02"},{"n":"碧海古井","k":"へきかいふるい","c":"MT-NI04","la":34.9372,"lo":137.09084,"km":5.7,"r":0,"cEst":true,"no":"GN03"},{"n":"堀内公園","k":"ほりうちこうえん","c":"MT-NI05","la":34.92762,"lo":137.08965,"km":6.7,"r":0,"cEst":true,"no":"GN04"},{"n":"桜井","k":"さくらい","c":"MT-NI06","la":34.91752,"lo":137.08837,"km":7.9,"r":3,"cEst":true,"no":"GN05"},{"n":"南桜井","k":"みなみさくらい","c":"MT-NI07","la":34.90601,"lo":137.07694,"km":9.5,"r":2,"cEst":true,"no":"GN06"},{"n":"米津","k":"よねづ","c":"MT-NI08","la":34.89285,"lo":137.06108,"km":11.6,"r":2,"cEst":true,"no":"GN07"},{"n":"桜町前","k":"さくらまちまえ","c":"MT-NI09","la":34.88024,"lo":137.06245,"km":13.0,"r":2,"cEst":true,"no":"GN08"},{"n":"西尾口","k":"にしおぐち","c":"MT-NI10","la":34.87074,"lo":137.0627,"km":14.2,"r":0,"cEst":true,"no":"GN09"},{"n":"西尾","k":"にしお","c":"MT-NI11","la":34.86392,"lo":137.05784,"km":15.0,"r":3,"cEst":true,"no":"GN10"},{"n":"福地","k":"ふくち","c":"MT-NI12","la":34.84469,"lo":137.04855,"km":17.4,"r":3,"cEst":true,"no":"GN11"},{"n":"上横須賀","k":"かみよこすか","c":"MT-NI13","la":34.83012,"lo":137.07214,"km":20.5,"r":3,"cEst":true,"no":"GN12"},{"n":"吉良吉田","k":"きらよしだ","c":"MT-NI14","la":34.79428,"lo":137.07125,"km":24.7,"r":3,"cEst":true,"no":"GN13"}],"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-TY","name":"名鉄豊川線","short":"豊川線","op":"meitetsu","grp":"名鉄","color":"#B8860B","st":[{"n":"国府","k":"こう","c":"MT-TY01","la":34.83745,"lo":137.32814,"km":0.0,"r":4,"kmEst":true,"cEst":true,"no":"NH04"},{"n":"八幡","k":"やわた","c":"MT-TY02","la":34.82909,"lo":137.35202,"km":2.5,"r":4,"cEst":true,"no":"TK01"},{"n":"諏訪町","k":"すわちょう","c":"MT-TY03","la":34.82354,"lo":137.37044,"km":4.4,"r":4,"cEst":true,"no":"TK02"},{"n":"稲荷口","k":"いなりぐち","c":"MT-TY04","la":34.81842,"lo":137.38774,"km":6.0,"r":4,"cEst":true,"no":"TK03"},{"n":"豊川稲荷","k":"とよかわいなり","c":"MT-TY05","la":34.82177,"lo":137.39596,"km":7.2,"r":4,"cEst":true,"no":"TK04"}],"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-TO","name":"名鉄豊田線","short":"豊田線","op":"meitetsu","grp":"名鉄","color":"#4C6EF5","st":[{"n":"赤池","k":"あかいけ","c":"MT-TO01","la":35.12103,"lo":137.0182,"km":0.0,"r":0,"cEst":true,"no":"TT07"},{"n":"日進","k":"にっしん","c":"MT-TO02","la":35.11839,"lo":137.04878,"km":3.0,"r":0,"cEst":true,"no":"TT06"},{"n":"米野木","k":"こめのき","c":"MT-TO03","la":35.1237,"lo":137.06699,"km":4.8,"r":0,"cEst":true,"no":"TT05"},{"n":"黒笹","k":"くろざさ","c":"MT-TO04","la":35.12767,"lo":137.09159,"km":7.1,"r":0,"cEst":true,"no":"TT04"},{"n":"三好ヶ丘","k":"みよしがおか","c":"MT-TO05","la":35.12699,"lo":137.11142,"km":9.0,"r":0,"cEst":true,"no":"TT03"},{"n":"浄水","k":"じょうすい","c":"MT-TO06","la":35.12129,"lo":137.13732,"km":11.4,"r":0,"cEst":true,"no":"TT02"},{"n":"上豊田","k":"かみとよた","c":"MT-TO07","la":35.11617,"lo":137.1551,"km":13.2,"r":0,"cEst":true,"no":"TT01"},{"n":"梅坪","k":"うめつぼ","c":"MT-TO08","la":35.09967,"lo":137.16228,"km":15.2,"r":0,"cEst":true,"no":"MY08"}],"surcharge":{"0|1":30,"0|2":30,"0|3":40,"0|4":40,"0|5":50,"0|6":60,"0|7":60,"1|2":20,"1|3":30,"1|4":30,"1|5":40,"1|6":50,"1|7":50,"2|3":20,"2|4":30,"2|5":40,"2|6":40,"2|7":50,"3|4":20,"3|5":30,"3|6":40,"3|7":40,"4|5":20,"4|6":30,"4|7":40,"5|6":20,"5|7":30,"6|7":20},"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-MY","name":"名鉄三河線","short":"三河線","op":"meitetsu","grp":"名鉄","color":"#AE3EC9","st":[{"n":"碧南","k":"へきなん","c":"MT-MY01","la":34.87401,"lo":136.98562,"km":0.0,"r":0,"kmEst":true,"cEst":true,"no":"MU11"},{"n":"碧南中央","k":"へきなんちゅうおう","c":"MT-MY02","la":34.88731,"lo":136.98944,"km":1.6,"r":0,"cEst":true,"no":"MU10"},{"n":"新川町","k":"しんかわまち","c":"MT-MY03","la":34.89661,"lo":136.99031,"km":2.7,"r":0,"cEst":true,"no":"MU09"},{"n":"北新川","k":"きたしんかわ","c":"MT-MY04","la":34.90597,"lo":136.99248,"km":3.7,"r":0,"cEst":true,"no":"MU08"},{"n":"高浜港","k":"たかはまみなと","c":"MT-MY05","la":34.92153,"lo":136.98938,"km":5.5,"r":0,"cEst":true,"no":"MU07"},{"n":"三河高浜","k":"みかわたかはま","c":"MT-MY06","la":34.93077,"lo":136.98996,"km":6.5,"r":0,"cEst":true,"no":"MU06"},{"n":"吉浜","k":"よしはま","c":"MT-MY07","la":34.94671,"lo":136.98944,"km":8.4,"r":0,"cEst":true,"no":"MU05"},{"n":"小垣江","k":"おがきえ","c":"MT-MY08","la":34.96388,"lo":136.99552,"km":10.4,"r":0,"cEst":true,"no":"MU04"},{"n":"刈谷市","k":"かりやし","c":"MT-MY09","la":34.98468,"lo":136.99394,"km":13.0,"r":0,"cEst":true,"no":"MU03"},{"n":"刈谷","k":"かりや","c":"MT-MY10","la":34.99053,"lo":137.00928,"km":14.6,"r":0,"cEst":true,"no":"MU02"},{"n":"重原","k":"しげはら","c":"MT-MY11","la":34.99478,"lo":137.02378,"km":16.3,"r":0,"cEst":true,"no":"MU01"},{"n":"知立","k":"ちりゅう","c":"MT-MY12","la":35.00623,"lo":137.03967,"km":18.5,"r":0,"cEst":true,"no":"NH19"},{"n":"三河知立","k":"みかわちりゅう","c":"MT-MY13","la":35.0057,"lo":137.05507,"km":20.0,"r":0,"cEst":true,"no":"MY01"},{"n":"三河八橋","k":"みかわやつはし","c":"MT-MY14","la":35.01094,"lo":137.07724,"km":22.3,"r":0,"cEst":true,"no":"MY02"},{"n":"若林","k":"わかばやし","c":"MT-MY15","la":35.02631,"lo":137.09584,"km":24.7,"r":0,"cEst":true,"no":"MY03"},{"n":"竹村","k":"たけむら","c":"MT-MY16","la":35.04008,"lo":137.11476,"km":27.0,"r":0,"cEst":true,"no":"MY04"},{"n":"土橋","k":"つちはし","c":"MT-MY17","la":35.05823,"lo":137.12947,"km":29.6,"r":0,"cEst":true,"no":"MY05"},{"n":"上挙母","k":"うわごろも","c":"MT-MY18","la":35.07192,"lo":137.15467,"km":32.4,"r":0,"cEst":true,"no":"MY06"},{"n":"豊田市","k":"とよたし","c":"MT-MY19","la":35.08726,"lo":137.15624,"km":34.2,"r":0,"cEst":true,"no":"MY07"},{"n":"梅坪","k":"うめつぼ","c":"MT-MY20","la":35.09967,"lo":137.16228,"km":35.6,"r":0,"cEst":true,"no":"MY08"},{"n":"越戸","k":"こしど","c":"MT-MY21","la":35.10767,"lo":137.18013,"km":37.6,"r":0,"cEst":true,"no":"MY09"},{"n":"平戸橋","k":"ひらとばし","c":"MT-MY22","la":35.11454,"lo":137.18459,"km":38.7,"r":0,"cEst":true,"no":"MY10"},{"n":"猿投","k":"さなげ","c":"MT-MY23","la":35.12174,"lo":137.17871,"km":39.8,"r":0,"cEst":true,"no":"MY11"}],"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-CK","name":"名鉄築港線","short":"築港線","op":"meitetsu","grp":"名鉄","color":"#868E96","st":[{"n":"大江","k":"おおえ","c":"MT-CK01","la":35.0933,"lo":136.9128,"km":0.0,"r":0,"kmEst":true,"cEst":true,"no":"TA03"},{"n":"東名古屋港","k":"ひがしなごやこう","c":"MT-CK02","la":35.08909,"lo":136.89918,"km":1.5,"r":0,"cEst":true,"no":"CH01"}],"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-KA","name":"名鉄各務原線","short":"各務原線","op":"meitetsu","grp":"名鉄","color":"#F03E3E","st":[{"n":"名鉄岐阜","k":"めいてつぎふ","c":"MT-KA01","la":35.41156,"lo":136.76102,"km":0.0,"r":0,"kmEst":true,"cEst":true,"no":"NH60"},{"n":"田神","k":"たがみ","c":"MT-KA02","la":35.41128,"lo":136.77216,"km":1.1,"r":0,"cEst":true,"no":"KG16"},{"n":"細畑","k":"ほそばた","c":"MT-KA03","la":35.40157,"lo":136.7854,"km":2.9,"r":0,"cEst":true,"no":"KG15"},{"n":"切通","k":"きりどおし","c":"MT-KA04","la":35.40028,"lo":136.79562,"km":3.9,"r":0,"cEst":true,"no":"KG14"},{"n":"手力","k":"てぢから","c":"MT-KA05","la":35.39826,"lo":136.80448,"km":4.8,"r":0,"cEst":true,"no":"KG13"},{"n":"高田橋","k":"たかだばし","c":"MT-KA06","la":35.3984,"lo":136.81153,"km":5.4,"r":0,"cEst":true,"no":"KG12"},{"n":"新加納","k":"しんかのう","c":"MT-KA07","la":35.39939,"lo":136.82439,"km":6.6,"r":0,"cEst":true,"no":"KG11"},{"n":"新那加","k":"しんなか","c":"MT-KA08","la":35.40011,"lo":136.83386,"km":7.5,"r":0,"cEst":true,"no":"KG10"},{"n":"市民公園前","k":"しみんこうえんまえ","c":"MT-KA09","la":35.40057,"lo":136.8419,"km":8.1,"r":0,"cEst":true,"no":"KG09"},{"n":"各務原市役所前","k":"かかみがはらしやくしょまえ","c":"MT-KA10","la":35.40085,"lo":136.84733,"km":8.7,"r":0,"cEst":true,"no":"KG08"},{"n":"六軒","k":"ろっけん","c":"MT-KA11","la":35.40107,"lo":136.86158,"km":9.9,"r":0,"cEst":true,"no":"KG07"},{"n":"三柿野","k":"みかきの","c":"MT-KA12","la":35.40008,"lo":136.87617,"km":11.2,"r":0,"cEst":true,"no":"KG06"},{"n":"二十軒","k":"にじっけん","c":"MT-KA13","la":35.40017,"lo":136.8893,"km":12.4,"r":0,"cEst":true,"no":"KG05"},{"n":"名電各務原","k":"めいでんかかみがはら","c":"MT-KA14","la":35.40256,"lo":136.90103,"km":13.7,"r":0,"cEst":true,"no":"KG04"},{"n":"苧ヶ瀬","k":"おがせ","c":"MT-KA15","la":35.4033,"lo":136.91238,"km":14.6,"r":0,"cEst":true,"no":"KG03"},{"n":"羽場","k":"はば","c":"MT-KA16","la":35.40119,"lo":136.92156,"km":15.5,"r":0,"cEst":true,"no":"KG02"},{"n":"鵜沼宿","k":"うぬまじゅく","c":"MT-KA17","la":35.39988,"lo":136.93241,"km":16.5,"r":0,"cEst":true,"no":"KG01"},{"n":"新鵜沼","k":"しんうぬま","c":"MT-KA18","la":35.39683,"lo":136.94426,"km":17.6,"r":4,"cEst":true,"no":"IY17"}],"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-TB","name":"名鉄竹鼻線","short":"竹鼻線","op":"meitetsu","grp":"名鉄","color":"#E67700","st":[{"n":"笠松","k":"かさまつ","c":"MT-TB01","la":35.37467,"lo":136.76465,"km":0.0,"r":0,"kmEst":true,"cEst":true,"no":"NH56"},{"n":"西笠松","k":"にしかさまつ","c":"MT-TB02","la":35.36883,"lo":136.75777,"km":0.9,"r":0,"cEst":true,"no":"TH01"},{"n":"柳津","k":"やないづ","c":"MT-TB03","la":35.36504,"lo":136.73993,"km":2.9,"r":0,"cEst":true,"no":"TH02"},{"n":"南宿","k":"みなみじゅく","c":"MT-TB04","la":35.34788,"lo":136.72866,"km":5.2,"r":0,"cEst":true,"no":"TH03"},{"n":"須賀","k":"すか","c":"MT-TB05","la":35.33987,"lo":136.72678,"km":6.1,"r":0,"cEst":true,"no":"TH04"},{"n":"不破一色","k":"ふわいしき","c":"MT-TB06","la":35.33297,"lo":136.72191,"km":7.0,"r":0,"cEst":true,"no":"TH05"},{"n":"竹鼻","k":"たけはな","c":"MT-TB07","la":35.32677,"lo":136.70644,"km":8.6,"r":0,"cEst":true,"no":"TH06"},{"n":"羽島市役所前","k":"はしましやくしょまえ","c":"MT-TB08","la":35.32194,"lo":136.69997,"km":9.6,"r":0,"cEst":true,"no":"TH07"},{"n":"江吉良","k":"えぎら","c":"MT-TB09","la":35.31544,"lo":136.69972,"km":10.3,"r":0,"cEst":true,"no":"TH08"}],"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-HJ","name":"名鉄羽島線","short":"羽島線","op":"meitetsu","grp":"名鉄","color":"#D9480F","st":[{"n":"江吉良","k":"えぎら","c":"MT-HJ01","la":35.31544,"lo":136.69972,"km":0.0,"r":0,"cEst":true,"no":"TH08"},{"n":"新羽島","k":"しんはしま","c":"MT-HJ02","la":35.31533,"lo":136.68694,"km":1.3,"r":0,"cEst":true,"no":"TH09"}],"surcharge":{"0|1":30},"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}}];window.RAIL_OPS={
+<script>window.RAIL_NEWS=[{"v": "5.17", "d": "2026-10-14", "items": ["ルートページを、スクロールしないで1画面に収まる新しいレイアウトにしました。現在駅・目的駅の2行（現在地の「⌖」、入れ替えの「⇅」、必要なときだけ「＋経由」）、条件の1行、よく使う区間の1行、結果の1行（例「28分・12駅・320円」）、電車の候補3件、「乗車を記録」ボタンだけを出します。細かい説明は、各行の「ⓘ」を押したときだけ出ます。", "検索条件を、1行をタップして開く画面で選ぶようにしました。基準（今すぐ・出発・到着・始発・終電）・日付・時・分をホイールで回して選び、並べ替えを選んで「決定」を押します。日付を選ぶと、その日の平日・土休日で探します。", "結果の1行をタップすると、区間ごとの内訳・運賃の内訳・発車の目安を見られます。電車の候補は上位3件で、「他N件」で残りが出ます。候補を選んで「乗車を記録」を押すと、その電車で記録します。時刻を決めて記録したいときは、右の「時刻指定」から行います。", "よく使う区間を横1行に並べ、登録・並べ替え・名前の変更・削除は「⋯」から開く画面にまとめました。駅を選ぶ画面の先頭に、検索欄と「よく使う」「最近」のボタンを追加しました。", "乗車中の画面を、次の駅を大きく、「降りる」「遅れている」を同じ大きさの2つのボタンにしました。", "保存データ・バックアップの読み込み時の検証を強化しました。不正な乗車の記録や駅コードが入っていても、画面が壊れたり、不正な文字が動いたりしないようにしました。", "戻る操作で、条件・詳細・よく使う区間の画面や「時刻指定」の画面を閉じられるようにしました（Esc キーでも閉じます）。"]}, {"v": "5.16", "d": "2026-10-14", "items": ["地図ページの一番上に「目的地の駅名を入力」を追加しました。駅名（読み仮名でも可）を入れて選ぶと、現在地から最寄りの駅を出発駅にして、所要時間と到着の目安、「ルートで乗車を記録」を出します。位置の精度が悪いときや隣の駅と見分けがつかないときは、出発駅を決めずに候補の駅を出します。", "GPS で「いま着いた駅」が実際より早く出る問題を直しました。これまでは一番近い駅を使っていたため、駅と駅の中間を過ぎると、まだ着いていない次の駅が現在駅になっていました。今は路線の上のどこにいるかで、次の駅に着く（名鉄 200m・地下鉄 120m 以内）まで前の駅のままにします。基地局の測位は、GPS が届いているあいだは使いません（要アプリ更新）。名鉄での測位の許容も、120秒前→60秒前までにしました。", "乗車中のルートページを整理しました。乗車カードが一番上に来て、よく使う区間・区間・検索条件・候補・発車の目安は畳まれます（「経路・検索・発車の目安も表示」で戻せます）。乗った文言とポップアップの案内は、「その他」にまとめました。", "設定を4つのグループ（通知・ポップアップ／表示・乗った文言／音声駅案内／アプリとデータ）に分けて、折りたたみにしました。開き閉じは覚えます。地図の「表示する路線」「タップの動作」は「地図の設定」にまとめました。", "0〜4時ごろに時刻表の「次の電車」の日付が1日先になる不具合を直しました（深夜に「次の電車まで1700分」と出ていました）。", "設定の「アプリとデータ」に、乗車中の記録（診断用）を追加しました。ポップアップが出た時刻や GPS の推定を、この端末の中だけに残します。ポップアップや現在駅がおかしいときは、「コピー」して見せてください。"]}, {"v": "5.15", "d": "2026-10-14", "items": ["乗車中の「残り◯分」「まもなく」「乗り過ごし」「降車アラーム」を、画面に出ている到着予定時刻と同じ基準にそろえました。これまでは画面の到着予定と通知の判定が別々の計算で、予定より早くポップアップが出ることがありました。乗り過ごしの警告は、到着予定の2分後を過ぎてからだけ出ます（GPS は30秒以内のものだけ使います）。", "ポップアップを「まもなく」「到着予定時刻」「乗り過ごしかも」の段階ごとに出すようにしました。閉じても、次の段階でまた出ます。到着予定を過ぎたあとは、閉じても2分おきに最大3回、もう一度知らせます。降車アラームも、到着予定の数分前と到着予定時刻ちょうどの2回です（要アプリ更新）。", "ポップアップ・通知・他のアプリの上の大きなポップアップ・乗車カードに「遅れている」ボタンを追加しました。押すと到着予定が3分後ろにずれ（すでに過ぎていれば、いまから3分後）、また「まもなく」から知らせます。押した回数と合計は乗車履歴に残ります（通知・大きなポップアップのボタンは要アプリ更新）。", "乗車の登録を、直近60分以内に出た電車なら「あとから」できるようにしました。乗車カードに「さっき出た電車（60分以内）」を追加。時刻表ページの列車を開くと「この電車に乗った（乗車を記録）」が出ます（目的駅が未設定なら、その場で選べます）。到着予定をすでに過ぎている電車を登録したときは、通知は出さず「降りましたか？」を1回だけ聞きます。"]}, {"v": "5.14", "d": "2026-09-30", "items": ["ダークモードを、地図だけでなく全体で見やすくしました。黒に近い地、オレンジの選択色、細いオレンジ系の枠（NERV 風）にし、カードが背景に埋もれないようにしました。文字と背景の明るさの差は、本文・補足・ボタン文字とも読みやすい水準（4.5:1 以上）にしています。ライトモードは変わりません。", "ダークモードの地図を見やすくしました。黒地に細いオレンジの境界線と六角形の格子（NERV 風）、路線の色を明るく、駅名・地名は琥珀色にして、路線と文字が背景に埋もれないようにしています。公式の路線図（画像）は、路線の色を変えないまま白の眩しさだけを抑えます（画面の更新だけで反映されます）。", "自動更新を、設定の「アプリとデータの更新」で、オン／オフできるようにしました（既定はオン）。オフにすると、無線LANのときの定期確認と、アプリを開いたときの確認をやめます。「今すぐ確認」は、オフでも使えます（要アプリ更新。アプリ本体が古いと切り替えられないので、その旨を表示します。今回、アプリ本体の版を 5.14 に上げました）。", "目的駅が近づいたとき、他のアプリを使っていても見えるように、画面の上に大きなポップアップ（「まもなく〇〇」と「降車する」「閉じる」のカード。iPhone のダイナミックアイランドのような表示）を重ねて出せるようにしました。端末の「他のアプリの上に重ねて表示」の許可が必要です。設定の「他のアプリの上に大きなポップアップ」で、許可・オン／オフ・試しの表示ができます。許可がないときは、これまでどおり「降車する」付きの通知が出ます（要アプリ更新）。", "音声駅案内を、特急・快特などのときは、その列車が停まる駅だけ案内するようにしました。乗車を記録するときに種別（快特・特急など）を選ぶか、時刻表の候補（発車時刻のボタン）から登録すると使われます（時刻表から選ぶと、その列車の実際の停車駅のとおり）。種別を選ばないとき、普通・各停、乗り換えたあとの列車は、これまでどおり全駅を案内します。乗車カード・通知の「次の駅」「残り駅数」も、停まる駅だけで数えます。", "「使い方」に「アプリを更新する」を追加しました。自動更新のしくみ、いま確認する方法、初回だけの許可、うまく動かないとき、APK を手で入れる手順を、図と画面の写真つきで説明しています。", "メニューに「使い方」を追加しました。ルート検索・乗車の記録（降車ポップアップ、位置の補正、乗り過ごし警告、乗った文言）・時刻表と発車標・地図と路線図・音声駅案内・メニューの各機能・設定・操作のコツを説明しています。ことばで探せます。説明の文は web/help.md に書いてあり、自由に書き換えられます。", "メニューを、ハンバーガーボタンのほかに、画面の左側（左から35%）から右へスワイプして引き出せるようにしました。開いたメニューは、左へスワイプ（または外側をタップ）で閉じます。地図・路線図の画像・横にスクロールする表・入力欄・シートの上では、そちらの操作を優先して開きません。端末の「戻る」ジェスチャー（画面の端）が先に取られることがあるので、少し内側から始めてください。", "マイページに「データのバックアップ」を追加しました。定期券・よく使う区間・乗車履歴・お気に入り・設定・書き換えた更新情報などを、文字（JSON）で書き出してコピー（アプリなら「共有…」も）でき、貼り付けて取り込めます（機種変更や、消えたときの復元用。外には送りません）。", "乗り換えの待ち時間の計算を、時刻表がある駅（名古屋本線・地下鉄）では、その駅・向き・時刻の前後の実際の発車間隔から求めるようにしました。運行間隔の表（地下鉄の推定だった時間帯）も、時刻表から求めた値に直しました。", "乗り過ごし警告を追加しました。乗車中にGPSで、到着予定を2分以上過ぎて目的駅から遠ざかっている（地下鉄は1.2km以上、それ以外は1.8km以上）と、ポップアップ・バイブで知らせます。アプリが裏なら「降車する」付きの通知です。乗車中は位置情報を使うので、設定の「乗り過ごし警告（GPSを使う）」で切れます（既定はオン。要アプリ更新）。", "更新情報の文言を、アプリの中で書き換えられるようにしました。この画面の「編集」で、項目の直し・削除・追加、自分のメモの追加、元に戻すができます（この端末だけに保存）。元の文は web/news.md に書きます。", "時刻表の「さらに見る」で、その駅・その方面の始発から終電まですべて表示するようにしました（始発・終電の印つき）。下に浮かぶ「始発へ／いまへ／終電へ」で移動でき、「とじる」で元の次の5本に戻ります。", "乗った文言の書き方を、乗車カードの「文言を編集」（登録前は「書き方を変える」）からも変えられるようにしました（設定の「乗った文言の書き方」の「編集」と同じ画面）。", "遅延・運休情報の取得履歴を、端末の中に約1日ぶん（内容が同じ間は1件にまとめて）残すようにしました。乗車中の時間帯に記載があれば、あとで無線LANにつながったときにも、マイページのお知らせに出せます（乗車の10分前から降りて2時間後までに取った情報を使います）。「遅延・運休情報」の画面にも取得の履歴が出ます（要アプリ更新）。", "乗車を記録すると、乗車中の画面に「16分発名古屋行き特急乗った」のような一言を出します（発車の分・行き先・種別。地下鉄は種別なし）。「コピー」ボタンでクリップボードにコピーできます。設定の「乗車登録時に…自動コピー」をオンにすると、記録した瞬間に自動でコピーします（既定はオフ）。行き先・種別は乗った駅の時刻表から探します。時刻表に無い（手入力の時刻がずれている）ときは、行き先を省きます。", "この文言の書き方は、設定の「乗った文言の書き方」で変えられます。{分}{時}{時刻}{行き先}{行き}{種別}{路線}{乗車駅}{目的駅} を組み合わせられ、「初期値に戻す」もあります（例：「{時刻}発 {行き先}行き {種別} 乗車しました」）。", "メニューに「マイページ」を追加しました。定期券・よく使う区間・乗車履歴（「降りる」で自動的に記録。この端末の中だけ、直近100件）と、よく乗る区間の集計を見られます。履歴の行をタップすると、その区間をルートに入れます。", "メニューに「遅延・運休情報」を追加しました。無線LAN（従量制でない接続）につながっているときに、公式ページの運行情報を30分ごとを目安に取っておき、遅延・運休の記載を一覧にします。公式ページの文言から自動で拾った目安なので、必ず公式の運行情報も確認してください（要アプリ更新）。", "メニューに「遅延証明書」を追加しました。名鉄・名古屋市営地下鉄それぞれの遅延証明書のページを開きます。", "定期券の登録・削除は、設定からマイページへ移しました。", "無線LANで取得した運行情報に、乗車登録した電車（いまの乗車・履歴の直近36時間）の路線の遅延・運休の記載があれば、マイページにお知らせを出し、遅延証明書の公式ページへ案内します（メニューの「マイページ」に「お知らせ」の印が付きます）。取得のタイミングによっては、乗った時間帯の遅れを拾えないことがあります。"]}, {"v": "5.12", "d": "2026-09-30", "items": ["乗車中に目的駅が近づく（あと約3分、または次が目的駅）と、ポップアップで知らせます。ポップアップの「降車する」からそのまま降車（乗車記録の終了）ができます。アプリが裏にあるときは、「降車する」ボタン付きの通知（画面上部に出るヘッドアップ通知）で知らせます（要アプリ更新）。", "設定に「到着ポップアップ・通知のバイブ」（オン／オフ、既定はオン）を追加しました。目的駅が近づいたポップアップが出るときにバイブが鳴ります。裏で出す通知・降車アラームの振動にも同じ設定が効きます（要アプリ更新）。", "アプリが裏にあるときの乗車中通知（次の駅）の更新が遅れる問題を直しました。乗車中は小さな常駐（通知欄の目立たない項目）で5秒ごとに更新します。音声駅案内がONなら、通知の「次の駅」もGPSを使った推定に合わせます（要アプリ更新）。", "現在位置のずれを補正できるようにしました。乗車中は「現在位置がずれているとき」から、今いる駅をタップすると、そこを基準に現在位置と到着予定を直します。地図には「タップ：現在駅にする」を追加しました。", "現在地から探すとき、測位の誤差が大きい・隣の駅と区別できない場合は、勝手に決めず候補の駅を並べて選べるようにしました（地下鉄は判定を厳しくしています）。音声駅案内でも、地下鉄では精度の良い最近の測位だけを使います。", "路線図ページに「路線別」を追加しました。アプリに入っている全26路線を、路線ごとに駅の並び・乗換先・停車種別つきで見られます。", "音声駅案内の音量を、30〜300%のスライダーで調整できるようにしました（100%が従来の最大。超えた分は端末側で増幅します。要アプリ更新）。"]}, {"v": "5.11", "d": "2026-09-29", "items": ["メニューに「利用履歴を印刷」を追加しました。「カードを読み取る」を押してICカードをタッチすると、券売機で印字できる利用履歴のように、区間・金額・残高を一覧にして、プリンターで印刷したりPDFに保存したりできます（プリンターは端末の印刷機能に対応したもの）。", "この画面（更新情報）にも、更新データがあるかを確かめる「今すぐ確認」ボタンを付けました。"]}, {"v": "5.10", "d": "2026-09-29", "items": ["ICカード：「読み取る」ボタンを押したときだけ読み取るようにしました（30秒待ちます）。", "ICカードの改札の記録（直近3件の入出場）から、定期券の範囲を推定して候補に出します（運賃0円の乗車が履歴にあれば、それも使います）。路線・起点・終点を直して、定期券として登録できます。", "ICカードの改札の記録（直近の入出場）を、読めた値のまま確認できるようにしました。"]}, {"v": "5.9", "d": "2026-09-29", "items": ["画面左上にメニュー（≡）を追加しました。", "設定をメニューへ移しました（下のタブは「ルート・時刻表・発車標・地図」の4つになりました）。", "ICカード：manaca・Suica などの交通系ICカードをスマホにタッチすると、残高と利用履歴（日付・区間・金額）を見られます。読み取った内容は保存も送信もしません。NFC対応の端末のみ。", "要望メッセージ：不具合の報告や改善の要望を、アプリの中から開発者に送れます（通信が必要です。返信はできません）。", "更新情報：この画面です。"]}, {"v": "5.8", "d": "2026-09-29", "items": ["無線LANにつながったとき、画面とデータ、アプリ本体を自動で更新するようにしました。", "名鉄の運賃を、公式の営業キロと運賃規則にそろえて計算するようにしました（最短経路で計算）。", "名鉄の路線を追加し、名古屋本線を名鉄岐阜まで延ばしました。", "名鉄公式サイトの駅情報（駅ナンバリング・読み・停車種別）を反映しました。"]}];window.RAIL_HELP=[{"h": "はじめに", "b": [{"k": "p", "t": "このアプリは、名鉄と名古屋市営地下鉄の経路検索・時刻表・発車標・乗車案内を、通信なしで使えるものです。"}, {"k": "ul", "i": ["通信を使うのは、アプリの更新の確認・要望メッセージの送信・遅延／運休情報の取得（無線LANのとき）・公式ページを開くときだけです。", "下のタブは、**ルート**・**時刻表**・**発車標**・**地図**。左上の**三本線のボタン**（または画面の左側から右へスワイプ）でメニューが開きます。", "戻るボタン（ジェスチャー）で、開いている画面やシートを閉じられます。"]}]}, {"h": "ルートを調べる", "b": [{"k": "ul", "i": ["「現在駅」と「目的駅」の欄をタップして駅を選びます。駅選択の画面は、上の検索欄（駅名・よみ・駅番号）と、「よく使う」「最近」のボタンから選べます。間の「⇅」で入れ替え、目的駅の右の「＋経由」で途中の駅を指定できます。目的駅を空にするには、目的駅の選択画面の「目的駅をクリア」を使います。", "現在駅の右の「⌖」は、位置情報から最寄りの駅を選びます。地下や高架下など位置が不確かなときは、勝手に決めず、近い駅の候補を並べます。", "**検索条件**：条件の1行（例「今すぐ・早い順」）をタップすると、基準（今すぐ・出発・到着・始発・終電）、日付、時刻をホイールで選べます。「出発」「到着」のときだけ日付・時刻を選べます。並べ替えは「早い順」「乗換が楽」。「決定」で反映します。", "結果は1行（例「28分・12駅・320円」）にまとめています。タップすると、区間ごとの内訳、運賃の内訳、発車の目安を見られます。電車の候補は上位3件で、「他N件」で残りが出ます。候補は、1回目のタップで選ぶ（「乗車を記録」で記録する電車になります）、選んである行をもう一度タップすると停車駅が出ます。", "各行の右の「ⓘ」を押すと、その行の短い説明が出ます。", "駅の一覧（地図タブの「駅一覧」）では、駅名をタップで目的駅、行の右の「現」で現在駅になります。", "よく使う区間は、条件の下の1行に並びます（横にスクロールできます）。登録・並べ替え・名前の変更・削除は、行の右の「⋯」から開く画面で行います（「今の区間を登録」「駅を選んで登録」「編集」）。", "運賃は大人普通運賃の目安です。定期券を登録した区間は0円として計算します（実際の精算と1区間ずれることがあります）。所要時間・到着予定は概算で、時刻表とはずれます。"]}]}, {"h": "乗車を記録する", "b": [{"k": "ul", "i": ["電車に乗ったら、候補で乗った電車を選んで「乗車を記録」を押します。候補にない電車や、乗ったあとの登録は、右の「時刻指定」から、発車時刻を入れる（「今」ボタンや、時刻表の候補ボタンも使えます）か、さっき出た電車を選んで「この時刻で乗車」を押します。時刻表のない区間は、「乗車を記録」を押すと時刻を入れる画面が開きます。", "乗車中は、到着予定・残り時間・「〇〇へ向かっています」を表示します。通知（アプリが裏のとき）にも同じ内容が出ます。", "「降りる」で記録を終えます。終えた乗車はマイページの履歴に残ります。", "**乗った文言**：登録すると「16分発名古屋行き特急乗った」のような一言が出ます。「コピー」でクリップボードに入ります。書き方は「文言を編集」（または設定の「乗った文言の書き方」）で変えられ、設定で「乗車登録時に自動コピー」もできます。", "**現在位置のずれの補正**：「現在位置がずれているとき」を開き、今いる駅をタップすると、そこを基準に現在位置と到着予定を直します。地図の「タップ：現在駅にする」でも現在駅を直せます。", "**降車ポップアップ**：目的駅が近づく（あと約3分、または次が目的駅）と画面に出ます。「降車する」でそのまま記録を終えられます。設定でバイブも鳴らせます。", "**他のアプリを使っているとき**：画面の上に、大きなカード（「まもなく〇〇」と「降車する」「閉じる」）を重ねて出します。iPhone のダイナミックアイランドのような表示です。使うには、端末の「他のアプリの上に重ねて表示」の許可が必要で、設定の「他のアプリの上に大きなポップアップ」の「許可を設定」から開けます（「試す」で見本が出ます）。許可がないときは、「降車する」付きの通知になります。", "**乗り過ごし警告**：到着予定を2分以上過ぎて、GPSで目的駅から遠ざかっているときに知らせます（乗車中は位置情報を使うので、設定で切れます）。", "**降車アラーム**：設定で、到着の何分前（または2駅前）に通知するかを選べます。"]}]}, {"h": "時刻表・発車標", "b": [{"k": "ul", "i": ["**時刻表**タブ：路線→駅→方面の順に選びます。名鉄は名古屋本線、地下鉄は全6路線の時刻表があります。平日／土休日は切り替えられます。", "「さらに見る」で、その駅・その方面の**始発から終電まで全部**を表示します。下に浮かぶ「始発へ／いまへ／終電へ」で移動でき、「とじる」で次の5本に戻ります。「時間帯」表示に切り替えると、時ごとの一覧で見られます。", "発車をタップすると、その列車のこの先の各駅の時刻が見られます（地下鉄は推定）。", "「☆登録」で駅と方面を登録すると、**発車標**タブに、登録した駅の次の電車が自動更新で並びます。ホーム画面のウィジェットにも出せます。", "乗換の待ち時間は、時刻表がある駅（名古屋本線・地下鉄）では、その駅の実際の発車間隔から求めています。"]}]}, {"h": "地図・路線図", "b": [{"k": "ul", "i": ["**地図**：実際の線路の形を描いた地図です（地図タイルは読み込まないので通信ゼロ）。「両方／名鉄／地下鉄」で表示を絞れます。ドラッグ・ピンチで動かし、駅をタップで目的駅になります。", "**路線図**：地下鉄・名鉄の公式案内図の画像と、**路線別**（アプリに入っている全26路線を、駅順・乗換先・停車種別つきで表示）があります。路線別の「現」「行」で現在駅・目的駅を選べます。", "**駅一覧**：路線ごとの駅の一覧です。"]}]}, {"h": "音声駅案内", "b": [{"k": "ul", "i": ["設定の「音声駅案内」をオンにして乗車を記録すると、「次は〇〇です」「まもなく〇〇です」「乗換は〇〇線です」などを音声で案内します（端末の音声合成を使います）。", "案内する内容（2駅前・次駅・まもなく・目的地・乗換・通過警告）、速度、**音量（30〜300%。100%を超えた分は増幅）**、イヤホン接続時だけ、声の種類、駅名の読みなどを設定で調整できます。", "**特急・快特などは、その列車が停まる駅だけ**を案内します。乗車を記録するときに、種別のボタン（快特・特急など）を選ぶか、時刻表の候補（発車時刻のボタン）から登録してください。時刻表から選ぶと、その列車の停車駅のとおりに案内します。種別を選ばないときは、全駅を案内します（普通・各停も全駅）。", "乗車カードや通知の「〇〇へ向かっています」「残り〇駅」も、停まる駅だけで数えます。乗り換えたあとの列車は種別が分からないので、全駅を案内します。", "位置情報とバックグラウンド実行を使います（画面を消していても案内します）。"]}]}, {"h": "メニューの機能", "b": [{"k": "ul", "i": ["**マイページ**：定期券の登録・削除、よく使う区間、乗車履歴（直近100件・この端末だけ）、よく乗る区間、データのバックアップ。乗った電車に遅延・運休の記載があると「お知らせ」が出ます。", "**遅延・運休情報**：無線LAN（従量制でない接続）のときに、公式ページの運行情報を取っておき、遅延・運休の記載を一覧にします。公式ページの文言から自動で拾った**目安**なので、必ず公式の運行情報も確認してください。", "**遅延証明書**：名鉄・名古屋市営地下鉄の遅延証明書のページを開きます。", "**ICカード**：交通系ICカードをスマホの背面にタッチして、利用履歴を見ます（「カードを読み取る」を押してからタッチ）。履歴から定期券の候補も出せます。", "**利用履歴を印刷**：ICカードの履歴を、印刷またはPDF保存します。", "**要望メッセージ**：開発者に要望や不具合を送ります（通信が必要）。", "**更新情報**：変更点の一覧です。「編集」で、あなた自身の言葉に書き換えたり、メモを足したりできます（この端末だけに保存）。"]}]}, {"h": "設定", "b": [{"k": "ul", "i": ["**表示**：乗車中の通知、降車アラーム、乗り過ごし警告、到着時のバイブ、乗った文言の書き方と自動コピー、テーマ（自動／明るい／暗い）。", "**音声駅案内**：上の「音声駅案内」の項目を参照。", "**アプリとデータの更新**：無線LANのときに自動で確認します。「今すぐ確認」でいつでも確認できます。"]}]}, {"h": "アプリを更新する", "b": [{"k": "p", "t": "**ふだんは自動**で更新されます。何もしなくても、無線LAN（従量制でない接続）につながったときに、約12時間に1回と、アプリを開いたときに、新しい版がないか確認します。自動更新は、設定の「アプリとデータの更新」の**「自動更新」をオフ**にすると止められます（オフでも、「今すぐ確認」で手動で確認できます）。"}, {"k": "img", "src": "help/update_flow.svg", "alt": "自動更新のしくみ"}, {"k": "ul", "i": ["**画面・時刻表・路線のデータ**：見つかると自動で取ってきて、**次にアプリを開いたときから**使います。アプリの入れ替えは要りません。", "**アプリ本体**：新しい版がある（更新情報に載る）と、ダウンロードして**通知**を出します。通知をタップすると、インストールの確認画面が出るので、「更新」を押します（確認画面は端末の仕様で必ず1回出ます）。", "更新できたかどうかは、メニューを開いた一番上の「**バージョン 5.14**」のように、版の番号で分かります。変更点は「更新情報」で読めます。"]}, {"k": "img", "src": "help/update_menu.png", "alt": "メニューの上に、いまの版が出る"}, {"k": "h", "t": "いま確認したいとき"}, {"k": "ul", "i": ["メニュー → **設定** → 下のほうの「**アプリとデータの更新**」で「**今すぐ確認**」を押します。最終確認の時刻と、結果（「画面とデータは最新です」など）が出ます。モバイル回線でも確認できます（通信します）。", "メニュー → **更新情報** の上の「**今すぐ確認**」でも、同じ確認ができます。"]}, {"k": "img", "src": "help/update_settings.png", "alt": "設定の「アプリとデータの更新」（新しいアプリ本体があるとき）"}, {"k": "img", "src": "help/update_news.png", "alt": "更新情報の画面の「今すぐ確認」"}, {"k": "h", "t": "初めてだけ必要な設定"}, {"k": "p", "t": "アプリ本体を自動で更新するには、初回だけ、端末で「**この提供元のアプリを許可**」（不明なアプリのインストール）をオンにします。設定の「アプリとデータの更新」に「**アプリ更新の許可を設定**」ボタンが出ていたら、それを押して、表示された画面で許可をオンにしてください。画面とデータの更新には、この許可は要りません。"}, {"k": "img", "src": "help/update_perm.png", "alt": "許可がまだのとき（「アプリ更新の許可を設定」が出る）"}, {"k": "h", "t": "うまく動かないとき"}, {"k": "ul", "i": ["更新した画面が開けなかったときは、次に開いたときに、アプリに入っている元の画面に戻ります。「同梱のデータに戻す」ボタン（更新した画面とデータがあるときだけ出ます）でも戻せます。", "「確認できませんでした」と出たら、電波のよいところで「今すぐ確認」をもう一度押してください。", "古いアプリには、先にアプリ本体の更新が必要なとき、画面を配らずにアプリ本体の更新を案内します。", "更新に使う通信は、確認とダウンロードだけです。経路検索・時刻表などは、通信なしで動きます。", "通信を減らしたいときや、いまの版のまま使いたいときは、「自動更新」をオフにします。オフにしている間は、新しい画面・データ・アプリ本体は届きません（「今すぐ確認」を押したときだけ確認します）。"]}, {"k": "h", "t": "自動更新が使えないとき（APK を手で入れる）"}, {"k": "p", "t": "GitHub にビルドされた APK を、直接ダウンロードして入れる方法です。手順は次のとおりです。"}, {"k": "img", "src": "help/update_manual.svg", "alt": "APK を手で入れる手順"}, {"k": "ul", "i": ["GitHub の「Actions」の実行結果の下にある「Artifacts」は、ログインした状態でないとダウンロードできません。保存期間は約3か月です。", "署名鍵が登録されていないビルドは、入っているアプリに上書きできません（お気に入りや設定も消えます）。先にマイページの「データのバックアップ」で書き出しておくと、取り込めます。"]}]}, {"h": "操作のコツ", "b": [{"k": "ul", "i": ["画面の**左側から右へスワイプ**でメニューが開き、開いたメニューは左へスワイプで閉じます。地図・路線図の画像・横にスクロールする表・入力欄の上では、その操作が優先です。端末の「戻る」ジェスチャー（画面の端）に取られることがあるので、少し内側から始めてください。", "一覧の長い画面（時刻表の全表示など）は、下に浮かぶボタンで先頭・いま・終電へ動けます。", "入力欄の文言（乗った文言・更新情報）は、入力するたびに自動で保存されます。"]}]}, {"h": "データ・バックアップ・注意", "b": [{"k": "ul", "i": ["時刻表：名鉄は名古屋本線（豊橋〜木曽川堤、2026年3月14日改正）、地下鉄は名古屋市交通局の駅別時刻表から作ったものです。他の名鉄の路線は、時刻表が無く、運行間隔の目安で待ち時間を出します。", "**バックアップ**：マイページの「データのバックアップ」で、定期券・履歴・設定などを文字で書き出せます。機種変更のときは、貼り付けて取り込みます。外には送りません。", "運賃・所要時間・到着予定は目安です。実際の運賃や運行は、必ず各社の公式情報を確認してください。", "個人利用のためのアプリです。時刻表などのデータは公開しないでください。"]}]}];window.RAIL_DATA=[{"id":"NH","name":"名鉄名古屋本線","short":"名古屋本線","op":"meitetsu","color":"#E4002B","st":[{"n":"豊橋","k":"とよはし","c":"NH01","la":34.76273,"lo":137.38213,"km":0.0,"t":["東海道新幹線","JR飯田線(豊橋～天竜峡)","JR東海道本線(浜松～岐阜)"],"r":4},{"n":"伊奈","k":"いな","c":"NH02","la":34.80286,"lo":137.35474,"km":5.0,"r":2},{"n":"小田渕","k":"おだぶち","c":"NH03","la":34.81474,"lo":137.34559,"km":6.6,"r":0},{"n":"国府","k":"こう","c":"NH04","la":34.83752,"lo":137.3281,"km":9.6,"t":["名鉄豊川線"],"r":3},{"n":"御油","k":"ごゆ","c":"NH05","la":34.84611,"lo":137.32144,"km":10.7,"r":0},{"n":"名電赤坂","k":"めいでんあかさか","c":"NH06","la":34.85933,"lo":137.31115,"km":12.5,"r":0},{"n":"名電長沢","k":"めいでんながさわ","c":"NH07","la":34.87162,"lo":137.2883,"km":15.0,"r":0},{"n":"本宿","k":"もとじゅく","c":"NH08","la":34.89303,"lo":137.26001,"km":18.7,"r":2},{"n":"名電山中","k":"めいでんやまなか","c":"NH09","la":34.89947,"lo":137.24283,"km":20.4,"r":0},{"n":"藤川","k":"ふじかわ","c":"NH10","la":34.9133,"lo":137.21843,"km":23.1,"r":1},{"n":"美合","k":"みあい","c":"NH11","la":34.92376,"lo":137.19632,"km":25.6,"r":2},{"n":"男川","k":"おとがわ","c":"NH12","la":34.93746,"lo":137.1833,"km":27.6,"r":1,"p":2},{"n":"東岡崎","k":"ひがしおかざき","c":"NH13","la":34.9519,"lo":137.16733,"km":29.8,"r":4},{"n":"岡崎公園前","k":"おかざきこうえんまえ","c":"NH14","la":34.95498,"lo":137.15331,"km":31.1,"r":0},{"n":"矢作橋","k":"やはぎばし","c":"NH15","la":34.96115,"lo":137.13996,"km":32.5,"r":1,"p":2},{"n":"宇頭","k":"うとう","c":"NH16","la":34.97137,"lo":137.1181,"km":34.8,"r":0},{"n":"新安城","k":"しんあんじょう","c":"NH17","la":34.98689,"lo":137.08544,"km":38.3,"t":["名鉄西尾線"],"r":3},{"n":"牛田","k":"うしだ","c":"NH18","la":34.99929,"lo":137.06095,"km":40.9,"r":0,"p":1},{"n":"知立","k":"ちりゅう","c":"NH19","la":35.0062,"lo":137.03963,"km":43.1,"t":["名鉄三河線"],"r":4},{"n":"一ツ木","k":"ひとつぎ","c":"NH20","la":35.01367,"lo":137.02551,"km":44.6,"r":0},{"n":"富士松","k":"ふじまつ","c":"NH21","la":35.02976,"lo":137.01651,"km":46.6,"r":0},{"n":"豊明","k":"とよあけ","c":"NH22","la":35.04113,"lo":137.00816,"km":48.1,"r":1,"p":2},{"n":"前後","k":"ぜんご","c":"NH23","la":35.05227,"lo":136.99567,"km":49.8,"r":2},{"n":"中京競馬場前","k":"ちゅうきょうけいばじょうまえ","c":"NH24","la":35.0613,"lo":136.98158,"km":51.4,"r":1,"p":2},{"n":"有松","k":"ありまつ","c":"NH25","la":35.06769,"lo":136.97108,"km":52.7,"r":1,"p":2},{"n":"左京山","k":"さきょうやま","c":"NH26","la":35.07055,"lo":136.9603,"km":53.8,"r":0,"p":1},{"n":"鳴海","k":"なるみ","c":"NH27","la":35.07915,"lo":136.9501,"km":55.1,"r":2,"p":3},{"n":"本星崎","k":"もとほしざき","c":"NH28","la":35.08739,"lo":136.93738,"km":56.7,"r":0},{"n":"本笠寺","k":"もとかさでら","c":"NH29","la":35.0992,"lo":136.93341,"km":58.2,"r":0,"p":1},{"n":"桜","k":"さくら","c":"NH30","la":35.10606,"lo":136.93459,"km":58.9,"r":0},{"n":"呼続","k":"よびつぎ","c":"NH31","la":35.11472,"lo":136.93039,"km":59.9,"r":0},{"n":"堀田","k":"ほりた","c":"NH32","la":35.12025,"lo":136.91984,"km":61.1,"r":2},{"n":"神宮前","k":"じんぐうまえ","c":"NH33","la":35.12586,"lo":136.91249,"km":62.2,"t":["名鉄常滑線"],"r":4},{"n":"金山","k":"かなやま","c":"NH34","la":35.14293,"lo":136.90052,"km":64.4,"t":["JR中央本線(名古屋～塩尻)","JR東海道本線(浜松～岐阜)","名鉄常滑線","地下鉄名城線","地下鉄名港線"],"r":4},{"n":"山王","k":"さんのう","c":"NH35","la":35.15233,"lo":136.88846,"km":66.0,"t":["名鉄常滑線"],"r":0},{"n":"名鉄名古屋","k":"めいてつなごや","c":"NH36","la":35.16925,"lo":136.88419,"km":68.0,"t":["名鉄常滑線","名鉄犬山線"],"r":4},{"n":"栄生","k":"さこう","c":"NH37","la":35.18369,"lo":136.87305,"km":69.9,"t":["名鉄犬山線"],"r":2},{"n":"東枇杷島","k":"ひがしびわじま","c":"NH38","la":35.18981,"lo":136.87017,"km":70.7,"t":["名鉄犬山線"],"r":0},{"n":"西枇杷島","k":"にしびわじま","c":"NH39","la":35.19501,"lo":136.86569,"km":71.6,"r":0},{"n":"二ツ杁","k":"ふたついり","c":"NH40","la":35.19465,"lo":136.85958,"km":72.2,"r":1,"p":2},{"n":"新川橋","k":"しんかわばし","c":"NH41","la":35.1957,"lo":136.85199,"km":72.8,"r":0},{"n":"須ヶ口","k":"すかぐち","c":"NH42","la":35.19868,"lo":136.84623,"km":73.5,"t":["名鉄津島線"],"r":2,"p":3},{"n":"丸ノ内","k":"まるのうち","c":"NH43","la":35.20474,"lo":136.84193,"km":74.3,"r":0},{"n":"新清洲","k":"しんきよす","c":"NH44","la":35.21125,"lo":136.83561,"km":75.2,"r":2},{"n":"大里","k":"おおさと","c":"NH45","la":35.22622,"lo":136.81843,"km":77.5,"r":1,"p":2},{"n":"奥田","k":"おくだ","c":"NH46","la":35.23541,"lo":136.81092,"km":78.8,"r":0},{"n":"国府宮","k":"こうのみや","c":"NH47","la":35.25422,"lo":136.80296,"km":80.9,"r":4},{"n":"島氏永","k":"しまうじなが","c":"NH48","la":35.27078,"lo":136.80099,"km":82.9,"r":0},{"n":"妙興寺","k":"みょうこうじ","c":"NH49","la":35.28718,"lo":136.79823,"km":84.7,"r":0},{"n":"名鉄一宮","k":"めいてついちのみや","c":"NH50","la":35.30154,"lo":136.79722,"km":86.4,"t":["名鉄尾西線"],"r":4},{"n":"今伊勢","k":"いまいせ","c":"NH51","la":35.31836,"lo":136.78927,"km":88.3,"r":0},{"n":"石刀","k":"いわと","c":"NH52","la":35.3262,"lo":136.78541,"km":89.2,"r":0},{"n":"新木曽川","k":"しんきそがわ","c":"NH53","la":35.34205,"lo":136.77942,"km":91.2,"r":4},{"n":"黒田","k":"くろだ","c":"NH54","la":35.35021,"lo":136.7775,"km":92.1,"r":0},{"n":"木曽川堤","k":"きそがわづつみ","c":"NH55","la":35.36507,"lo":136.77049,"km":93.9,"r":0},{"n":"笠松","k":"かさまつ","c":"NH56","la":35.37467,"lo":136.76465,"km":95.1,"r":4},{"n":"岐南","k":"ぎなん","c":"NH57","la":35.38978,"lo":136.76925,"km":96.9,"r":0},{"n":"茶所","k":"ちゃじょ","c":"NH58","la":35.40208,"lo":136.76892,"km":98.3,"r":0},{"n":"加納","k":"かのう","c":"NH59","la":35.40517,"lo":136.76611,"km":98.7,"r":0},{"n":"名鉄岐阜","k":"めいてつぎふ","c":"NH60","la":35.41092,"lo":136.76023,"km":99.8,"r":4}],"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"H","name":"名古屋市営地下鉄 東山線","short":"東山線","op":"subway","color":"#F5A200","st":[{"n":"高畑","k":"たかばた","c":"H01","la":35.13916,"lo":136.85347,"km":0.0},{"n":"八田","k":"はった","c":"H02","la":35.14897,"lo":136.85226,"km":1.1,"t":["JR関西本線(名古屋～亀山)"]},{"n":"岩塚","k":"いわつか","c":"H03","la":35.15846,"lo":136.85441,"km":2.1},{"n":"中村公園","k":"なかむらこうえん","c":"H04","la":35.16783,"lo":136.85506,"km":3.2},{"n":"中村日赤","k":"なかむらにっせき","c":"H05","la":35.17238,"lo":136.86173,"km":4.0},{"n":"本陣","k":"ほんじん","c":"H06","la":35.17713,"lo":136.86678,"km":4.7},{"n":"亀島","k":"かめじま","c":"H07","la":35.17753,"lo":136.87676,"km":5.6},{"n":"名古屋","k":"なごや","c":"H08","la":35.17069,"lo":136.88164,"km":6.6,"t":["東海道新幹線","JR中央本線(名古屋～塩尻)","JR東海道本線(浜松～岐阜)","JR関西本線(名古屋～亀山)","西名古屋港線(あおなみ線)","地下鉄桜通線"]},{"n":"伏見","k":"ふしみ","c":"H09","la":35.16927,"lo":136.89743,"km":8.1,"t":["地下鉄鶴舞線"]},{"n":"栄","k":"さかえ","c":"H10","la":35.16999,"lo":136.90803,"km":9.1,"t":["地下鉄名城線"]},{"n":"新栄町","k":"しんさかえまち","c":"H11","la":35.17073,"lo":136.92038,"km":10.2},{"n":"千種","k":"ちくさ","c":"H12","la":35.17017,"lo":136.93067,"km":11.2,"t":["JR中央本線(名古屋～塩尻)"]},{"n":"今池","k":"いまいけ","c":"H13","la":35.16992,"lo":136.93733,"km":11.8,"t":["地下鉄桜通線"]},{"n":"池下","k":"いけした","c":"H14","la":35.16768,"lo":136.94649,"km":12.6},{"n":"覚王山","k":"かくおうざん","c":"H15","la":35.16656,"lo":136.95371,"km":13.3},{"n":"本山","k":"もとやま","c":"H16","la":35.16392,"lo":136.96344,"km":14.2,"t":["地下鉄名城線"]},{"n":"東山公園","k":"ひがしやまこうえん","c":"H17","la":35.16045,"lo":136.97287,"km":15.2},{"n":"星ヶ丘","k":"ほしがおか","c":"H18","la":35.1624,"lo":136.9851,"km":16.3},{"n":"一社","k":"いっしゃ","c":"H19","la":35.16823,"lo":136.99593,"km":17.5},{"n":"上社","k":"かみやしろ","c":"H20","la":35.17366,"lo":137.00708,"km":18.7},{"n":"本郷","k":"ほんごう","c":"H21","la":35.17545,"lo":137.01343,"km":19.3},{"n":"藤が丘","k":"ふじがおか","c":"H22","la":35.18211,"lo":137.02171,"km":20.6,"t":["東部丘陵線(リニモ)"]}]},{"id":"T","name":"名古屋市営地下鉄 鶴舞線","short":"鶴舞線","op":"subway","color":"#0E9CC8","st":[{"n":"上小田井","k":"かみおたい","c":"T01","la":35.22348,"lo":136.87694,"km":0.0,"t":["名鉄犬山線"]},{"n":"庄内緑地公園","k":"しょうないりょくちこうえん","c":"T02","la":35.21519,"lo":136.88696,"km":1.3},{"n":"庄内通","k":"しょうないどおり","c":"T03","la":35.20448,"lo":136.89104,"km":2.6},{"n":"浄心","k":"じょうしん","c":"T04","la":35.19221,"lo":136.89082,"km":4.0},{"n":"浅間町","k":"せんげんちょう","c":"T05","la":35.18384,"lo":136.89033,"km":4.9},{"n":"丸の内","k":"まるのうち","c":"T06","la":35.17346,"lo":136.89694,"km":6.4,"t":["地下鉄桜通線"]},{"n":"伏見","k":"ふしみ","c":"T07","la":35.16927,"lo":136.89743,"km":6.9,"t":["地下鉄東山線"]},{"n":"大須観音","k":"おおすかんのん","c":"T08","la":35.16073,"lo":136.89816,"km":7.8},{"n":"上前津","k":"かみまえづ","c":"T09","la":35.15748,"lo":136.90681,"km":8.9,"t":["地下鉄名城線"]},{"n":"鶴舞","k":"つるまい","c":"T10","la":35.15642,"lo":136.91744,"km":9.8,"t":["JR中央本線(名古屋～塩尻)"]},{"n":"荒畑","k":"あらはた","c":"T11","la":35.14965,"lo":136.92593,"km":11.0},{"n":"御器所","k":"ごきそ","c":"T12","la":35.14959,"lo":136.93415,"km":11.8,"t":["地下鉄桜通線"]},{"n":"川名","k":"かわな","c":"T13","la":35.1487,"lo":136.94872,"km":13.1},{"n":"いりなか","k":"いりなか","c":"T14","la":35.14323,"lo":136.95538,"km":14.0},{"n":"八事","k":"やごと","c":"T15","la":35.13695,"lo":136.96404,"km":15.1,"t":["地下鉄名城線"]},{"n":"塩釜口","k":"しおがまぐち","c":"T16","la":35.13243,"lo":136.97753,"km":16.4},{"n":"植田","k":"うえだ","c":"T17","la":35.12865,"lo":136.98788,"km":17.5},{"n":"原","k":"はら","c":"T18","la":35.12612,"lo":136.99671,"km":18.3},{"n":"平針","k":"ひらばり","c":"T19","la":35.12277,"lo":137.0069,"km":19.3},{"n":"赤池","k":"あかいけ","c":"T20","la":35.1211,"lo":137.01798,"km":20.4,"t":["名鉄豊田線"]}]},{"id":"M","name":"名古屋市営地下鉄 名城線","short":"名城線","op":"subway","color":"#8B5CF6","st":[{"n":"金山","k":"かなやま","c":"M01","la":35.14293,"lo":136.90052,"km":0.0,"t":["JR中央本線(名古屋～塩尻)","JR東海道本線(浜松～岐阜)","名鉄名古屋本線","名鉄常滑線","地下鉄名港線"]},{"n":"東別院","k":"ひがしべついん","c":"M02","la":35.15045,"lo":136.90482,"km":0.9},{"n":"上前津","k":"かみまえづ","c":"M03","la":35.15748,"lo":136.90681,"km":1.7,"t":["地下鉄鶴舞線"]},{"n":"矢場町","k":"やばちょう","c":"M04","la":35.16378,"lo":136.90899,"km":2.5},{"n":"栄","k":"さかえ","c":"M05","la":35.16999,"lo":136.90803,"km":3.2,"t":["地下鉄東山線"]},{"n":"久屋大通","k":"ひさやおおどおり","c":"M06","la":35.17378,"lo":136.90816,"km":3.6,"t":["地下鉄桜通線"]},{"n":"名古屋城","k":"なごやじょう","c":"M07","la":35.18156,"lo":136.90538,"km":4.5},{"n":"名城公園","k":"めいじょうこうえん","c":"M08","la":35.19053,"lo":136.90475,"km":5.5},{"n":"黒川","k":"くろかわ","c":"M09","la":35.19718,"lo":136.91018,"km":6.6},{"n":"志賀本通","k":"しがほんどおり","c":"M10","la":35.19628,"lo":136.92121,"km":7.6},{"n":"平安通","k":"へいあんどおり","c":"M11","la":35.19593,"lo":136.92978,"km":8.4,"t":["地下鉄上飯田線"]},{"n":"大曽根","k":"おおぞね","c":"M12","la":35.19151,"lo":136.93716,"km":9.3,"t":["JR中央本線(名古屋～塩尻)","名鉄瀬戸線","ゆとりーとライン"]},{"n":"ナゴヤドーム前矢田","k":"なごやどーむまえやだ","c":"M13","la":35.19069,"lo":136.94526,"km":10.1,"t":["ゆとりーとライン"]},{"n":"砂田橋","k":"すなだばし","c":"M14","la":35.18886,"lo":136.954,"km":10.9,"t":["ゆとりーとライン"]},{"n":"茶屋ヶ坂","k":"ちゃやがさか","c":"M15","la":35.18461,"lo":136.96225,"km":11.8},{"n":"自由ヶ丘","k":"じゆうがおか","c":"M16","la":35.17496,"lo":136.96676,"km":13.0},{"n":"本山","k":"もとやま","c":"M17","la":35.16392,"lo":136.96344,"km":14.3,"t":["地下鉄東山線"]},{"n":"名古屋大学","k":"なごやだいがく","c":"M18","la":35.15426,"lo":136.96658,"km":15.4},{"n":"八事日赤","k":"やごとにっせき","c":"M19","la":35.14456,"lo":136.96501,"km":16.5},{"n":"八事","k":"やごと","c":"M20","la":35.13695,"lo":136.96404,"km":17.5,"t":["地下鉄鶴舞線"]},{"n":"総合リハビリセンター","k":"そうごうりはびりせんたー","c":"M21","la":35.13054,"lo":136.95452,"km":18.8},{"n":"瑞穂運動場東","k":"みずほうんどうじょうひがし","c":"M22","la":35.12317,"lo":136.94869,"km":19.7},{"n":"新瑞橋","k":"あらたまばし","c":"M23","la":35.11773,"lo":136.9366,"km":21.0,"t":["地下鉄桜通線"]},{"n":"妙音通","k":"みょうおんどおり","c":"M24","la":35.11713,"lo":136.92954,"km":21.7},{"n":"堀田","k":"ほりた","c":"M25","la":35.11664,"lo":136.92168,"km":22.4},{"n":"熱田神宮伝馬町","k":"あつたじんぐうてんまちょう","c":"M26","la":35.12074,"lo":136.91038,"km":23.6},{"n":"熱田神宮西","k":"あつたじんぐうにし","c":"M27","la":35.12796,"lo":136.90677,"km":24.6},{"n":"西高蔵","k":"にしたかくら","c":"M28","la":35.13462,"lo":136.90177,"km":25.4}],"circ":26.4},{"id":"S","name":"名古屋市営地下鉄 桜通線","short":"桜通線","op":"subway","color":"#CE1126","st":[{"n":"太閤通","k":"たいこうどおり","c":"S01","la":35.16761,"lo":136.87313,"km":0.0},{"n":"名古屋","k":"なごや","c":"S02","la":35.17069,"lo":136.88164,"km":0.9},{"n":"国際センター","k":"こくさいせんたー","c":"S03","la":35.17213,"lo":136.88938,"km":1.6},{"n":"丸の内","k":"まるのうち","c":"S04","la":35.17346,"lo":136.89694,"km":2.3},{"n":"久屋大通","k":"ひさやおおどおり","c":"S05","la":35.17378,"lo":136.90816,"km":3.3},{"n":"高岳","k":"たかおか","c":"S06","la":35.17406,"lo":136.91566,"km":4.0},{"n":"車道","k":"くるまみち","c":"S07","la":35.17351,"lo":136.92954,"km":5.3},{"n":"今池","k":"いまいけ","c":"S08","la":35.16992,"lo":136.93733,"km":6.1},{"n":"吹上","k":"ふきあげ","c":"S09","la":35.15879,"lo":136.93538,"km":7.4},{"n":"御器所","k":"ごきそ","c":"S10","la":35.14959,"lo":136.93415,"km":8.4},{"n":"桜山","k":"さくらやま","c":"S11","la":35.1397,"lo":136.93332,"km":9.5},{"n":"瑞穂区役所","k":"みずほくやくしょ","c":"S12","la":35.13179,"lo":136.93443,"km":10.4},{"n":"瑞穂運動場西","k":"みずほうんどうじょうにし","c":"S13","la":35.12495,"lo":136.93548,"km":11.2},{"n":"新瑞橋","k":"あらたまばし","c":"S14","la":35.11773,"lo":136.9366,"km":12.0},{"n":"桜本町","k":"さくらほんまち","c":"S15","la":35.109,"lo":136.93676,"km":13.0},{"n":"鶴里","k":"つるさと","c":"S16","la":35.10574,"lo":136.94343,"km":13.8},{"n":"野並","k":"のなみ","c":"S17","la":35.10236,"lo":136.95549,"km":15.0},{"n":"鳴子北","k":"なるこきた","c":"S18","la":35.10268,"lo":136.96621,"km":16.0},{"n":"相生山","k":"あいおいやま","c":"S19","la":35.10254,"lo":136.97621,"km":16.9},{"n":"神沢","k":"かみさわ","c":"S20","la":35.09852,"lo":136.98954,"km":18.3},{"n":"徳重","k":"とくしげ","c":"S21","la":35.09449,"lo":136.99815,"km":19.1}]},{"id":"E","name":"名古屋市営地下鉄 名港線","short":"名港線","op":"subway","color":"#7C5AC6","st":[{"n":"金山","k":"かなやま","c":"E01","la":35.14293,"lo":136.90052,"km":0.0},{"n":"日比野","k":"ひびの","c":"E02","la":35.13271,"lo":136.89312,"km":1.4},{"n":"六番町","k":"ろくばんちょう","c":"E03","la":35.12462,"lo":136.88871,"km":2.4},{"n":"東海通","k":"とうかいどおり","c":"E04","la":35.11339,"lo":136.88734,"km":3.7},{"n":"港区役所","k":"みなとくやくしょ","c":"E05","la":35.10574,"lo":136.88455,"km":4.6},{"n":"築地口","k":"つきじぐち","c":"E06","la":35.09935,"lo":136.88316,"km":5.3},{"n":"名古屋港","k":"なごやこう","c":"E07","la":35.09348,"lo":136.88197,"km":6.0}]},{"id":"K","name":"名古屋市営地下鉄 上飯田線","short":"上飯田線","op":"subway","color":"#E85298","st":[{"n":"上飯田","k":"かみいいだ","c":"K01","la":35.20385,"lo":136.92964,"km":0.0},{"n":"平安通","k":"へいあんどおり","c":"K02","la":35.19593,"lo":136.92978,"km":0.8}]},{"id":"MT-TA","name":"名鉄常滑線","short":"常滑線","op":"meitetsu","grp":"名鉄","color":"#E0382D","st":[{"n":"神宮前","k":"じんぐうまえ","c":"MT-TA01","la":35.1257,"lo":136.91257,"km":0.0,"r":3,"kmEst":true,"cEst":true,"no":"NH33"},{"n":"豊田本町","k":"とよだほんまち","c":"MT-TA02","la":35.11362,"lo":136.91082,"km":1.4,"r":0,"cEst":true,"no":"TA01"},{"n":"道徳","k":"どうとく","c":"MT-TA03","la":35.1057,"lo":136.90952,"km":2.4,"r":0,"cEst":true,"no":"TA02"},{"n":"大江","k":"おおえ","c":"MT-TA04","la":35.0933,"lo":136.9128,"km":3.8,"r":2,"cEst":true,"no":"TA03"},{"n":"大同町","k":"だいどうちょう","c":"MT-TA05","la":35.08026,"lo":136.90935,"km":5.3,"r":1,"cEst":true,"no":"TA04"},{"n":"柴田","k":"しばた","c":"MT-TA06","la":35.07282,"lo":136.90908,"km":6.1,"r":0,"cEst":true,"no":"TA05"},{"n":"名和","k":"なわ","c":"MT-TA07","la":35.06092,"lo":136.91169,"km":7.5,"r":0,"cEst":true,"no":"TA06"},{"n":"聚楽園","k":"しゅうらくえん","c":"MT-TA08","la":35.04282,"lo":136.90306,"km":9.7,"r":1,"cEst":true,"no":"TA07"},{"n":"新日鉄前","k":"しんにってつまえ","c":"MT-TA09","la":35.03514,"lo":136.89949,"km":10.6,"r":0,"cEst":true,"no":"TA08"},{"n":"太田川","k":"おおたがわ","c":"MT-TA10","la":35.0203,"lo":136.89257,"km":12.3,"r":3,"cEst":true,"no":"TA09"},{"n":"尾張横須賀","k":"おわりよこすか","c":"MT-TA11","la":35.01001,"lo":136.88555,"km":13.7,"r":3,"cEst":true,"no":"TA10"},{"n":"寺本","k":"てらもと","c":"MT-TA12","la":35.0002,"lo":136.87544,"km":15.1,"r":2,"cEst":true,"no":"TA11"},{"n":"朝倉","k":"あさくら","c":"MT-TA13","la":34.99386,"lo":136.86345,"km":16.4,"r":3,"cEst":true,"no":"TA12"},{"n":"古見","k":"こみ","c":"MT-TA14","la":34.98774,"lo":136.85677,"km":17.3,"r":2,"cEst":true,"no":"TA13"},{"n":"長浦","k":"ながうら","c":"MT-TA15","la":34.9784,"lo":136.84781,"km":18.7,"r":0,"cEst":true,"no":"TA14"},{"n":"日長","k":"ひなが","c":"MT-TA16","la":34.96166,"lo":136.83217,"km":21.0,"r":0,"cEst":true,"no":"TA15"},{"n":"新舞子","k":"しんまいこ","c":"MT-TA17","la":34.94973,"lo":136.8286,"km":22.5,"r":3,"cEst":true,"no":"TA16"},{"n":"大野町","k":"おおのまち","c":"MT-TA18","la":34.93543,"lo":136.8275,"km":24.1,"r":2,"cEst":true,"no":"TA17"},{"n":"西ノ口","k":"にしのくち","c":"MT-TA19","la":34.9246,"lo":136.82676,"km":25.4,"r":0,"cEst":true,"no":"TA18"},{"n":"蒲池","k":"かばいけ","c":"MT-TA20","la":34.91528,"lo":136.82565,"km":26.4,"r":0,"cEst":true,"no":"TA19"},{"n":"榎戸","k":"えのきど","c":"MT-TA21","la":34.90495,"lo":136.8282,"km":27.5,"r":0,"cEst":true,"no":"TA20"},{"n":"多屋","k":"たや","c":"MT-TA22","la":34.89702,"lo":136.83069,"km":28.6,"r":0,"cEst":true,"no":"TA21"},{"n":"常滑","k":"とこなめ","c":"MT-TA23","la":34.89117,"lo":136.83511,"km":29.3,"r":3,"cEst":true,"no":"TA22"}],"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-KJ","name":"名鉄空港線","short":"空港線","op":"meitetsu","grp":"名鉄","color":"#F08300","st":[{"n":"常滑","k":"とこなめ","c":"MT-KJ01","la":34.89117,"lo":136.83511,"km":0.0,"r":3,"cEst":true,"no":"TA22"},{"n":"りんくう常滑","k":"りんくうとこなめ","c":"MT-KJ02","la":34.87962,"lo":136.8281,"km":1.6,"r":2,"cEst":true,"no":"TA23"},{"n":"中部国際空港","k":"ちゅうぶこくさいくうこう","c":"MT-KJ03","la":34.8599,"lo":136.81598,"km":4.2,"r":3,"cEst":true,"no":"TA24"}],"surcharge":{"0|1":30,"0|2":80,"1|2":50},"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-KW","name":"名鉄河和線","short":"河和線","op":"meitetsu","grp":"名鉄","color":"#D6336C","st":[{"n":"太田川","k":"おおたがわ","c":"MT-KW01","la":35.0203,"lo":136.89257,"km":0.0,"r":3,"kmEst":true,"cEst":true,"no":"TA09"},{"n":"高横須賀","k":"たかよこすか","c":"MT-KW02","la":35.00965,"lo":136.89373,"km":1.3,"r":0,"cEst":true,"no":"KC01"},{"n":"加木屋中ノ池","k":"かぎやなかのいけ","c":"MT-KW03","la":35.00014,"lo":136.90235,"km":2.6,"r":0,"cEst":true,"no":"KC02"},{"n":"南加木屋","k":"みなみかぎや","c":"MT-KW04","la":34.98927,"lo":136.90686,"km":4.1,"r":2,"cEst":true,"no":"KC03"},{"n":"八幡新田","k":"やわたしんでん","c":"MT-KW05","la":34.97378,"lo":136.91262,"km":5.9,"r":0,"cEst":true,"no":"KC04"},{"n":"巽ヶ丘","k":"たつみがおか","c":"MT-KW06","la":34.96229,"lo":136.91567,"km":7.1,"r":2,"cEst":true,"no":"KC05"},{"n":"白沢","k":"しらさわ","c":"MT-KW07","la":34.95508,"lo":136.91538,"km":7.9,"r":0,"cEst":true,"no":"KC06"},{"n":"坂部","k":"さかべ","c":"MT-KW08","la":34.94097,"lo":136.91672,"km":9.5,"r":0,"cEst":true,"no":"KC07"},{"n":"阿久比","k":"あぐい","c":"MT-KW09","la":34.9313,"lo":136.91845,"km":10.6,"r":3,"cEst":true,"no":"KC08"},{"n":"植大","k":"うえだい","c":"MT-KW10","la":34.91743,"lo":136.92345,"km":12.2,"r":0,"cEst":true,"no":"KC09"},{"n":"半田口","k":"はんだぐち","c":"MT-KW11","la":34.90909,"lo":136.92547,"km":13.2,"r":0,"cEst":true,"no":"KC10"},{"n":"住吉町","k":"すみよしちょう","c":"MT-KW12","la":34.9021,"lo":136.92574,"km":14.0,"r":2,"cEst":true,"no":"KC11"},{"n":"知多半田","k":"ちたはんだ","c":"MT-KW13","la":34.89399,"lo":136.92588,"km":14.8,"r":3,"cEst":true,"no":"KC12"},{"n":"成岩","k":"ならわ","c":"MT-KW14","la":34.8862,"lo":136.92184,"km":15.8,"r":2,"cEst":true,"no":"KC13"},{"n":"青山","k":"あおやま","c":"MT-KW15","la":34.87874,"lo":136.91729,"km":16.8,"r":3,"cEst":true,"no":"KC14"},{"n":"上ゲ","k":"あげ","c":"MT-KW16","la":34.85833,"lo":136.91645,"km":19.0,"r":2,"cEst":true,"no":"KC15"},{"n":"知多武豊","k":"ちたたけとよ","c":"MT-KW17","la":34.85062,"lo":136.91654,"km":19.8,"r":3,"cEst":true,"no":"KC16"},{"n":"富貴","k":"ふき","c":"MT-KW18","la":34.82932,"lo":136.91676,"km":22.3,"r":3,"cEst":true,"no":"KC17"},{"n":"河和口","k":"こうわぐち","c":"MT-KW19","la":34.79725,"lo":136.91898,"km":25.8,"r":3,"cEst":true,"no":"KC18"},{"n":"河和","k":"こうわ","c":"MT-KW20","la":34.77802,"lo":136.91226,"km":28.8,"r":3,"cEst":true,"no":"KC19"}],"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-CS","name":"名鉄知多新線","short":"知多新線","op":"meitetsu","grp":"名鉄","color":"#C2255C","st":[{"n":"富貴","k":"ふき","c":"MT-CS01","la":34.82932,"lo":136.91676,"km":0.0,"r":3,"cEst":true,"no":"KC17"},{"n":"上野間","k":"かみのま","c":"MT-CS02","la":34.80727,"lo":136.86681,"km":5.8,"r":3,"cEst":true,"no":"KC20"},{"n":"美浜緑苑","k":"みはまりょくえん","c":"MT-CS03","la":34.80029,"lo":136.86309,"km":6.7,"r":3,"cEst":true,"no":"KC21"},{"n":"知多奥田","k":"ちたおくだ","c":"MT-CS04","la":34.78719,"lo":136.86449,"km":8.1,"r":3,"cEst":true,"no":"KC22"},{"n":"野間","k":"のま","c":"MT-CS05","la":34.7723,"lo":136.86075,"km":9.8,"r":3,"cEst":true,"no":"KC23"},{"n":"内海","k":"うつみ","c":"MT-CS06","la":34.74469,"lo":136.87525,"km":13.9,"r":3,"cEst":true,"no":"KC24"}],"surcharge":{"0|1":40,"0|2":40,"0|3":50,"0|4":60,"0|5":70,"1|2":20,"1|3":20,"1|4":30,"1|5":50,"2|3":20,"2|4":30,"2|5":40,"3|4":20,"3|5":40,"4|5":30},"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-ST","name":"名鉄瀬戸線","short":"瀬戸線","op":"meitetsu","grp":"名鉄","color":"#1C7ED6","st":[{"n":"栄町","k":"さかえまち","c":"MT-ST01","la":35.17048,"lo":136.90884,"km":0.0,"r":2,"kmEst":true,"cEst":true,"no":"ST01"},{"n":"東大手","k":"ひがしおおて","c":"MT-ST02","la":35.18345,"lo":136.90848,"km":1.5,"r":2,"cEst":true,"no":"ST02"},{"n":"清水","k":"しみず","c":"MT-ST03","la":35.18709,"lo":136.91394,"km":2.2,"r":0,"cEst":true,"no":"ST03"},{"n":"尼ヶ坂","k":"あまがさか","c":"MT-ST04","la":35.1878,"lo":136.91917,"km":2.7,"r":0,"cEst":true,"no":"ST04"},{"n":"森下","k":"もりした","c":"MT-ST05","la":35.18824,"lo":136.92929,"km":3.6,"r":0,"cEst":true,"no":"ST05"},{"n":"大曽根","k":"おおぞね","c":"MT-ST06","la":35.19159,"lo":136.93695,"km":4.6,"r":2,"cEst":true,"no":"ST06"},{"n":"矢田","k":"やだ","c":"MT-ST07","la":35.19366,"lo":136.94799,"km":5.9,"r":0,"cEst":true,"no":"ST07"},{"n":"守山自衛隊前","k":"もりやまじえいたいまえ","c":"MT-ST08","la":35.19619,"lo":136.95757,"km":7.0,"r":0,"cEst":true,"no":"ST08"},{"n":"瓢箪山","k":"ひょうたんやま","c":"MT-ST09","la":35.19714,"lo":136.96445,"km":7.6,"r":0,"cEst":true,"no":"ST09"},{"n":"小幡","k":"おばた","c":"MT-ST10","la":35.20007,"lo":136.97556,"km":8.6,"r":2,"cEst":true,"no":"ST10"},{"n":"喜多山","k":"きたやま","c":"MT-ST11","la":35.20506,"lo":136.98811,"km":9.9,"r":2,"cEst":true,"no":"ST11"},{"n":"大森・金城学院前","k":"おおもり・きんじょうがくいんまえ","c":"MT-ST12","la":35.20694,"lo":136.99659,"km":10.7,"r":2,"cEst":true,"no":"ST12"},{"n":"印場","k":"いんば","c":"MT-ST13","la":35.21102,"lo":137.01104,"km":12.2,"r":1,"cEst":true,"no":"ST13"},{"n":"旭前","k":"あさひまえ","c":"MT-ST14","la":35.21416,"lo":137.01975,"km":13.1,"r":1,"cEst":true,"no":"ST14"},{"n":"尾張旭","k":"おわりあさひ","c":"MT-ST15","la":35.21676,"lo":137.03625,"km":14.7,"r":2,"cEst":true,"no":"ST15"},{"n":"三郷","k":"さんごう","c":"MT-ST16","la":35.21623,"lo":137.05237,"km":16.1,"r":2,"cEst":true,"no":"ST16"},{"n":"水野","k":"みずの","c":"MT-ST17","la":35.2242,"lo":137.06942,"km":18.0,"r":2,"cEst":true,"no":"ST17"},{"n":"新瀬戸","k":"しんせと","c":"MT-ST18","la":35.22553,"lo":137.07769,"km":18.7,"r":2,"cEst":true,"no":"ST18"},{"n":"瀬戸市役所前","k":"せとしやくしょまえ","c":"MT-ST19","la":35.22499,"lo":137.08421,"km":19.4,"r":2,"cEst":true,"no":"ST19"},{"n":"尾張瀬戸","k":"おわりせと","c":"MT-ST20","la":35.22489,"lo":137.09674,"km":20.6,"r":2,"cEst":true,"no":"ST20"}],"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-TU","name":"名鉄津島線","short":"津島線","op":"meitetsu","grp":"名鉄","color":"#E8590C","st":[{"n":"須ヶ口","k":"すかぐち","c":"MT-TU01","la":35.19893,"lo":136.84575,"km":0.0,"r":3,"kmEst":true,"cEst":true,"no":"NH42"},{"n":"甚目寺","k":"じもくじ","c":"MT-TU02","la":35.19595,"lo":136.82585,"km":2.0,"r":3,"cEst":true,"no":"TB01"},{"n":"七宝","k":"しっぽう","c":"MT-TU03","la":35.19579,"lo":136.80596,"km":3.7,"r":0,"cEst":true,"no":"TB02"},{"n":"木田","k":"きだ","c":"MT-TU04","la":35.1953,"lo":136.78801,"km":5.4,"r":3,"cEst":true,"no":"TB03"},{"n":"青塚","k":"あおつか","c":"MT-TU05","la":35.19871,"lo":136.76693,"km":7.3,"r":0,"cEst":true,"no":"TB04"},{"n":"勝幡","k":"しょばた","c":"MT-TU06","la":35.19524,"lo":136.75037,"km":9.0,"r":3,"cEst":true,"no":"TB05"},{"n":"藤浪","k":"ふじなみ","c":"MT-TU07","la":35.18883,"lo":136.73891,"km":10.2,"r":0,"cEst":true,"no":"TB06"},{"n":"津島","k":"つしま","c":"MT-TU08","la":35.17803,"lo":136.73107,"km":11.8,"r":3,"cEst":true,"no":"TB07"}],"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-BI","name":"名鉄尾西線","short":"尾西線","op":"meitetsu","grp":"名鉄","color":"#9C36B5","st":[{"n":"弥富","k":"やとみ","c":"MT-BI01","la":35.11406,"lo":136.72584,"km":0.0,"r":0,"kmEst":true,"cEst":true,"no":"TB11"},{"n":"五ノ三","k":"ごのさん","c":"MT-BI02","la":35.12935,"lo":136.71143,"km":2.5,"r":0,"cEst":true,"no":"TB10"},{"n":"佐屋","k":"さや","c":"MT-BI03","la":35.14755,"lo":136.71668,"km":4.6,"r":3,"cEst":true,"no":"TB09"},{"n":"日比野","k":"ひびの","c":"MT-BI04","la":35.16367,"lo":136.7286,"km":6.6,"r":3,"cEst":true,"no":"TB08"},{"n":"津島","k":"つしま","c":"MT-BI05","la":35.17803,"lo":136.73107,"km":8.2,"r":3,"cEst":true,"no":"TB07"},{"n":"町方","k":"まちかた","c":"MT-BI06","la":35.18992,"lo":136.72704,"km":9.6,"r":0,"cEst":true,"no":"BS01"},{"n":"六輪","k":"ろくわ","c":"MT-BI07","la":35.20221,"lo":136.72915,"km":11.1,"r":0,"cEst":true,"no":"BS02"},{"n":"渕高","k":"ふちだか","c":"MT-BI08","la":35.21395,"lo":136.72735,"km":12.4,"r":0,"cEst":true,"no":"BS03"},{"n":"丸渕","k":"まるぶち","c":"MT-BI09","la":35.22253,"lo":136.72899,"km":13.4,"r":0,"cEst":true,"no":"BS04"},{"n":"上丸渕","k":"かみまるぶち","c":"MT-BI10","la":35.23387,"lo":136.73252,"km":14.7,"r":0,"cEst":true,"no":"BS05"},{"n":"森上","k":"もりかみ","c":"MT-BI11","la":35.24761,"lo":136.73695,"km":16.2,"r":0,"cEst":true,"no":"BS06"},{"n":"山崎","k":"やまざき","c":"MT-BI12","la":35.25644,"lo":136.73944,"km":17.3,"r":0,"cEst":true,"no":"BS07"},{"n":"玉野","k":"たまの","c":"MT-BI13","la":35.26619,"lo":136.7478,"km":18.7,"r":0,"cEst":true,"no":"BS08"},{"n":"萩原","k":"はぎわら","c":"MT-BI14","la":35.27717,"lo":136.7577,"km":20.2,"r":0,"cEst":true,"no":"BS09"},{"n":"二子","k":"ふたご","c":"MT-BI15","la":35.28376,"lo":136.76569,"km":21.3,"r":0,"cEst":true,"no":"BS10"},{"n":"苅安賀","k":"かりやすか","c":"MT-BI16","la":35.28714,"lo":136.77826,"km":22.5,"r":0,"cEst":true,"no":"BS11"},{"n":"観音寺","k":"かんのんじ","c":"MT-BI17","la":35.28972,"lo":136.78617,"km":23.2,"r":0,"cEst":true,"no":"BS12"},{"n":"名鉄一宮","k":"めいてついちのみや","c":"MT-BI18","la":35.30208,"lo":136.79698,"km":25.3,"r":0,"cEst":true,"no":"NH50"},{"n":"西一宮","k":"にしいちのみや","c":"MT-BI19","la":35.30748,"lo":136.79214,"km":26.0,"r":0,"cEst":true,"no":"BS21"},{"n":"開明","k":"かいめい","c":"MT-BI20","la":35.31927,"lo":136.77411,"km":28.1,"r":0,"cEst":true,"no":"BS22"},{"n":"奥町","k":"おくちょう","c":"MT-BI21","la":35.32435,"lo":136.7611,"km":29.4,"r":0,"cEst":true,"no":"BS23"},{"n":"玉ノ井","k":"たまのい","c":"MT-BI22","la":35.33485,"lo":136.75797,"km":30.9,"r":0,"cEst":true,"no":"BS24"}],"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-IN","name":"名鉄犬山線","short":"犬山線","op":"meitetsu","grp":"名鉄","color":"#2F9E44","st":[{"n":"下小田井","k":"しもおたい","c":"MT-IN01","la":35.20243,"lo":136.87081,"km":0.0,"r":0,"kmEst":true,"cEst":true,"no":"IY01"},{"n":"中小田井","k":"なかおたい","c":"MT-IN02","la":35.21475,"lo":136.87685,"km":1.4,"r":0,"cEst":true,"no":"IY02"},{"n":"上小田井","k":"かみおたい","c":"MT-IN03","la":35.2233,"lo":136.87702,"km":2.5,"r":2,"cEst":true,"no":"IY03"},{"n":"西春","k":"にしはる","c":"MT-IN04","la":35.24478,"lo":136.87129,"km":4.9,"r":2,"cEst":true,"no":"IY04"},{"n":"徳重・名古屋芸大","k":"とくしげ・なごやげいだい","c":"MT-IN05","la":35.25575,"lo":136.87336,"km":6.3,"r":0,"cEst":true,"no":"IY05"},{"n":"大山寺","k":"たいさんじ","c":"MT-IN06","la":35.26331,"lo":136.87479,"km":7.1,"r":0,"cEst":true,"no":"IY06"},{"n":"岩倉","k":"いわくら","c":"MT-IN07","la":35.27797,"lo":136.87357,"km":8.7,"r":4,"cEst":true,"no":"IY07"},{"n":"石仏","k":"いしぼとけ","c":"MT-IN08","la":35.29554,"lo":136.87117,"km":10.8,"r":1,"cEst":true,"no":"IY08"},{"n":"布袋","k":"ほてい","c":"MT-IN09","la":35.31706,"lo":136.87293,"km":13.2,"r":2,"cEst":true,"no":"IY09"},{"n":"江南","k":"こうなん","c":"MT-IN10","la":35.3347,"lo":136.87206,"km":15.2,"r":4,"cEst":true,"no":"IY10"},{"n":"柏森","k":"かしわもり","c":"MT-IN11","la":35.34482,"lo":136.90025,"km":18.0,"r":4,"cEst":true,"no":"IY11"},{"n":"扶桑","k":"ふそう","c":"MT-IN12","la":35.35965,"lo":136.91609,"km":20.2,"r":2,"cEst":true,"no":"IY12"},{"n":"木津用水","k":"こつようすい","c":"MT-IN13","la":35.36684,"lo":136.92602,"km":21.6,"r":1,"cEst":true,"no":"IY13"},{"n":"犬山口","k":"いぬやまぐち","c":"MT-IN14","la":35.37423,"lo":136.93997,"km":23.0,"r":1,"cEst":true,"no":"IY14"},{"n":"犬山","k":"いぬやま","c":"MT-IN15","la":35.3799,"lo":136.94554,"km":23.9,"r":4,"cEst":true,"no":"IY15"},{"n":"犬山遊園","k":"いぬやまゆうえん","c":"MT-IN16","la":35.39041,"lo":136.94693,"km":25.1,"r":4,"cEst":true,"no":"IY16"},{"n":"新鵜沼","k":"しんうぬま","c":"MT-IN17","la":35.39683,"lo":136.94426,"km":25.8,"r":4,"cEst":true,"no":"IY17"}],"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-KO","name":"名鉄小牧線","short":"小牧線","op":"meitetsu","grp":"名鉄","color":"#0C8599","st":[{"n":"上飯田","k":"かみいいだ","c":"MT-KO01","la":35.20361,"lo":136.92968,"km":0.0,"r":0,"kmEst":true,"cEst":true,"no":"KM13"},{"n":"味鋺","k":"あじま","c":"MT-KO02","la":35.22281,"lo":136.93627,"km":2.3,"r":0,"cEst":true,"no":"KM12"},{"n":"味美","k":"あじよし","c":"MT-KO03","la":35.23511,"lo":136.93718,"km":3.7,"r":0,"cEst":true,"no":"KM11"},{"n":"春日井","k":"かすがい","c":"MT-KO04","la":35.25036,"lo":136.93624,"km":5.4,"r":0,"cEst":true,"no":"KM10"},{"n":"牛山","k":"うしやま","c":"MT-KO05","la":35.26406,"lo":136.93134,"km":6.9,"r":0,"cEst":true,"no":"KM09"},{"n":"間内","k":"まない","c":"MT-KO06","la":35.2716,"lo":136.93119,"km":7.8,"r":0,"cEst":true,"no":"KM08"},{"n":"小牧口","k":"こまきぐち","c":"MT-KO07","la":35.28175,"lo":136.9277,"km":9.0,"r":0,"cEst":true,"no":"KM07"},{"n":"小牧","k":"こまき","c":"MT-KO08","la":35.28896,"lo":136.92799,"km":9.8,"r":0,"cEst":true,"no":"KM06"},{"n":"小牧原","k":"こまきはら","c":"MT-KO09","la":35.29868,"lo":136.93534,"km":11.3,"r":0,"cEst":true,"no":"KM05"},{"n":"味岡","k":"あじおか","c":"MT-KO10","la":35.30938,"lo":136.94034,"km":12.4,"r":0,"cEst":true,"no":"KM04"},{"n":"田県神社前","k":"たがたじんじゃまえ","c":"MT-KO11","la":35.3174,"lo":136.94378,"km":13.3,"r":0,"cEst":true,"no":"KM03"},{"n":"楽田","k":"がくでん","c":"MT-KO12","la":35.33056,"lo":136.95009,"km":14.9,"r":0,"cEst":true,"no":"KM02"},{"n":"羽黒","k":"はぐろ","c":"MT-KO13","la":35.35161,"lo":136.95252,"km":17.2,"r":0,"cEst":true,"no":"KM01"},{"n":"犬山","k":"いぬやま","c":"MT-KO14","la":35.3799,"lo":136.94554,"km":20.6,"r":0,"cEst":true,"no":"IY15"}],"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-HI","name":"名鉄広見線","short":"広見線","op":"meitetsu","grp":"名鉄","color":"#5F3DC4","st":[{"n":"犬山","k":"いぬやま","c":"MT-HI01","la":35.3799,"lo":136.94554,"km":0.0,"r":0,"kmEst":true,"cEst":true,"no":"IY15"},{"n":"富岡前","k":"とみおかまえ","c":"MT-HI02","la":35.37953,"lo":136.96218,"km":1.9,"r":0,"cEst":true,"no":"HM01"},{"n":"善師野","k":"ぜんじの","c":"MT-HI03","la":35.3898,"lo":136.98005,"km":4.0,"r":0,"cEst":true,"no":"HM02"},{"n":"西可児","k":"にしかに","c":"MT-HI04","la":35.40472,"lo":137.01066,"km":7.7,"r":0,"cEst":true,"no":"HM03"},{"n":"可児川","k":"かにがわ","c":"MT-HI05","la":35.41825,"lo":137.01846,"km":9.7,"r":0,"cEst":true,"no":"HM04"},{"n":"日本ライン今渡","k":"にほんらいんいまわたり","c":"MT-HI06","la":35.43231,"lo":137.03693,"km":12.2,"r":0,"cEst":true,"no":"HM05"},{"n":"新可児","k":"しんかに","c":"MT-HI07","la":35.42327,"lo":137.05568,"km":14.9,"r":0,"cEst":true,"no":"HM06"},{"n":"明智","k":"あけち","c":"MT-HI08","la":35.43335,"lo":137.08772,"km":18.4,"r":0,"cEst":true,"no":"HM07"},{"n":"顔戸","k":"ごうど","c":"MT-HI09","la":35.43453,"lo":137.10514,"km":20.0,"r":0,"cEst":true,"no":"HM08"},{"n":"御嵩口","k":"みたけぐち","c":"MT-HI10","la":35.43131,"lo":137.12174,"km":21.7,"r":0,"cEst":true,"no":"HM09"},{"n":"御嵩","k":"みたけ","c":"MT-HI11","la":35.42973,"lo":137.12754,"km":22.3,"r":0,"cEst":true,"no":"HM10"}],"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-GA","name":"名鉄蒲郡線","short":"蒲郡線","op":"meitetsu","grp":"名鉄","color":"#0B7285","st":[{"n":"蒲郡","k":"がまごおり","c":"MT-GA01","la":34.82277,"lo":137.22568,"km":0.0,"r":0,"kmEst":true,"cEst":true,"no":"GN22"},{"n":"蒲郡競艇場前","k":"がまごおりきょうていじょうまえ","c":"MT-GA02","la":34.82543,"lo":137.20212,"km":2.3,"r":0,"cEst":true,"no":"GN21"},{"n":"三河鹿島","k":"みかわかしま","c":"MT-GA03","la":34.81331,"lo":137.1897,"km":4.1,"r":0,"cEst":true,"no":"GN20"},{"n":"形原","k":"かたはら","c":"MT-GA04","la":34.79841,"lo":137.18464,"km":5.9,"r":0,"cEst":true,"no":"GN19"},{"n":"西浦","k":"にしうら","c":"MT-GA05","la":34.78997,"lo":137.17871,"km":7.1,"r":0,"cEst":true,"no":"GN18"},{"n":"こどもの国","k":"こどものくに","c":"MT-GA06","la":34.7886,"lo":137.16274,"km":8.7,"r":0,"cEst":true,"no":"GN17"},{"n":"東幡豆","k":"ひがしはず","c":"MT-GA07","la":34.78955,"lo":137.14593,"km":10.6,"r":0,"cEst":true,"no":"GN16"},{"n":"西幡豆","k":"にしはず","c":"MT-GA08","la":34.79248,"lo":137.12135,"km":12.9,"r":0,"cEst":true,"no":"GN15"},{"n":"三河鳥羽","k":"みかわとば","c":"MT-GA09","la":34.79331,"lo":137.10505,"km":14.4,"r":0,"cEst":true,"no":"GN14"},{"n":"吉良吉田","k":"きらよしだ","c":"MT-GA10","la":34.79428,"lo":137.07125,"km":17.6,"r":3,"cEst":true,"no":"GN13"}],"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-NI","name":"名鉄西尾線","short":"西尾線","op":"meitetsu","grp":"名鉄","color":"#66A80F","st":[{"n":"新安城","k":"しんあんじょう","c":"MT-NI01","la":34.9869,"lo":137.08551,"km":0.0,"r":3,"kmEst":true,"cEst":true,"no":"NH17"},{"n":"北安城","k":"きたあんじょう","c":"MT-NI02","la":34.96465,"lo":137.09215,"km":2.6,"r":0,"cEst":true,"no":"GN01"},{"n":"南安城","k":"みなみあんじょう","c":"MT-NI03","la":34.9519,"lo":137.0926,"km":4.0,"r":3,"cEst":true,"no":"GN02"},{"n":"碧海古井","k":"へきかいふるい","c":"MT-NI04","la":34.9372,"lo":137.09084,"km":5.7,"r":0,"cEst":true,"no":"GN03"},{"n":"堀内公園","k":"ほりうちこうえん","c":"MT-NI05","la":34.92762,"lo":137.08965,"km":6.7,"r":0,"cEst":true,"no":"GN04"},{"n":"桜井","k":"さくらい","c":"MT-NI06","la":34.91752,"lo":137.08837,"km":7.9,"r":3,"cEst":true,"no":"GN05"},{"n":"南桜井","k":"みなみさくらい","c":"MT-NI07","la":34.90601,"lo":137.07694,"km":9.5,"r":2,"cEst":true,"no":"GN06"},{"n":"米津","k":"よねづ","c":"MT-NI08","la":34.89285,"lo":137.06108,"km":11.6,"r":2,"cEst":true,"no":"GN07"},{"n":"桜町前","k":"さくらまちまえ","c":"MT-NI09","la":34.88024,"lo":137.06245,"km":13.0,"r":2,"cEst":true,"no":"GN08"},{"n":"西尾口","k":"にしおぐち","c":"MT-NI10","la":34.87074,"lo":137.0627,"km":14.2,"r":0,"cEst":true,"no":"GN09"},{"n":"西尾","k":"にしお","c":"MT-NI11","la":34.86392,"lo":137.05784,"km":15.0,"r":3,"cEst":true,"no":"GN10"},{"n":"福地","k":"ふくち","c":"MT-NI12","la":34.84469,"lo":137.04855,"km":17.4,"r":3,"cEst":true,"no":"GN11"},{"n":"上横須賀","k":"かみよこすか","c":"MT-NI13","la":34.83012,"lo":137.07214,"km":20.5,"r":3,"cEst":true,"no":"GN12"},{"n":"吉良吉田","k":"きらよしだ","c":"MT-NI14","la":34.79428,"lo":137.07125,"km":24.7,"r":3,"cEst":true,"no":"GN13"}],"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-TY","name":"名鉄豊川線","short":"豊川線","op":"meitetsu","grp":"名鉄","color":"#B8860B","st":[{"n":"国府","k":"こう","c":"MT-TY01","la":34.83745,"lo":137.32814,"km":0.0,"r":4,"kmEst":true,"cEst":true,"no":"NH04"},{"n":"八幡","k":"やわた","c":"MT-TY02","la":34.82909,"lo":137.35202,"km":2.5,"r":4,"cEst":true,"no":"TK01"},{"n":"諏訪町","k":"すわちょう","c":"MT-TY03","la":34.82354,"lo":137.37044,"km":4.4,"r":4,"cEst":true,"no":"TK02"},{"n":"稲荷口","k":"いなりぐち","c":"MT-TY04","la":34.81842,"lo":137.38774,"km":6.0,"r":4,"cEst":true,"no":"TK03"},{"n":"豊川稲荷","k":"とよかわいなり","c":"MT-TY05","la":34.82177,"lo":137.39596,"km":7.2,"r":4,"cEst":true,"no":"TK04"}],"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-TO","name":"名鉄豊田線","short":"豊田線","op":"meitetsu","grp":"名鉄","color":"#4C6EF5","st":[{"n":"赤池","k":"あかいけ","c":"MT-TO01","la":35.12103,"lo":137.0182,"km":0.0,"r":0,"cEst":true,"no":"TT07"},{"n":"日進","k":"にっしん","c":"MT-TO02","la":35.11839,"lo":137.04878,"km":3.0,"r":0,"cEst":true,"no":"TT06"},{"n":"米野木","k":"こめのき","c":"MT-TO03","la":35.1237,"lo":137.06699,"km":4.8,"r":0,"cEst":true,"no":"TT05"},{"n":"黒笹","k":"くろざさ","c":"MT-TO04","la":35.12767,"lo":137.09159,"km":7.1,"r":0,"cEst":true,"no":"TT04"},{"n":"三好ヶ丘","k":"みよしがおか","c":"MT-TO05","la":35.12699,"lo":137.11142,"km":9.0,"r":0,"cEst":true,"no":"TT03"},{"n":"浄水","k":"じょうすい","c":"MT-TO06","la":35.12129,"lo":137.13732,"km":11.4,"r":0,"cEst":true,"no":"TT02"},{"n":"上豊田","k":"かみとよた","c":"MT-TO07","la":35.11617,"lo":137.1551,"km":13.2,"r":0,"cEst":true,"no":"TT01"},{"n":"梅坪","k":"うめつぼ","c":"MT-TO08","la":35.09967,"lo":137.16228,"km":15.2,"r":0,"cEst":true,"no":"MY08"}],"surcharge":{"0|1":30,"0|2":30,"0|3":40,"0|4":40,"0|5":50,"0|6":60,"0|7":60,"1|2":20,"1|3":30,"1|4":30,"1|5":40,"1|6":50,"1|7":50,"2|3":20,"2|4":30,"2|5":40,"2|6":40,"2|7":50,"3|4":20,"3|5":30,"3|6":40,"3|7":40,"4|5":20,"4|6":30,"4|7":40,"5|6":20,"5|7":30,"6|7":20},"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-MY","name":"名鉄三河線","short":"三河線","op":"meitetsu","grp":"名鉄","color":"#AE3EC9","st":[{"n":"碧南","k":"へきなん","c":"MT-MY01","la":34.87401,"lo":136.98562,"km":0.0,"r":0,"kmEst":true,"cEst":true,"no":"MU11"},{"n":"碧南中央","k":"へきなんちゅうおう","c":"MT-MY02","la":34.88731,"lo":136.98944,"km":1.6,"r":0,"cEst":true,"no":"MU10"},{"n":"新川町","k":"しんかわまち","c":"MT-MY03","la":34.89661,"lo":136.99031,"km":2.7,"r":0,"cEst":true,"no":"MU09"},{"n":"北新川","k":"きたしんかわ","c":"MT-MY04","la":34.90597,"lo":136.99248,"km":3.7,"r":0,"cEst":true,"no":"MU08"},{"n":"高浜港","k":"たかはまみなと","c":"MT-MY05","la":34.92153,"lo":136.98938,"km":5.5,"r":0,"cEst":true,"no":"MU07"},{"n":"三河高浜","k":"みかわたかはま","c":"MT-MY06","la":34.93077,"lo":136.98996,"km":6.5,"r":0,"cEst":true,"no":"MU06"},{"n":"吉浜","k":"よしはま","c":"MT-MY07","la":34.94671,"lo":136.98944,"km":8.4,"r":0,"cEst":true,"no":"MU05"},{"n":"小垣江","k":"おがきえ","c":"MT-MY08","la":34.96388,"lo":136.99552,"km":10.4,"r":0,"cEst":true,"no":"MU04"},{"n":"刈谷市","k":"かりやし","c":"MT-MY09","la":34.98468,"lo":136.99394,"km":13.0,"r":0,"cEst":true,"no":"MU03"},{"n":"刈谷","k":"かりや","c":"MT-MY10","la":34.99053,"lo":137.00928,"km":14.6,"r":0,"cEst":true,"no":"MU02"},{"n":"重原","k":"しげはら","c":"MT-MY11","la":34.99478,"lo":137.02378,"km":16.3,"r":0,"cEst":true,"no":"MU01"},{"n":"知立","k":"ちりゅう","c":"MT-MY12","la":35.00623,"lo":137.03967,"km":18.5,"r":0,"cEst":true,"no":"NH19"},{"n":"三河知立","k":"みかわちりゅう","c":"MT-MY13","la":35.0057,"lo":137.05507,"km":20.0,"r":0,"cEst":true,"no":"MY01"},{"n":"三河八橋","k":"みかわやつはし","c":"MT-MY14","la":35.01094,"lo":137.07724,"km":22.3,"r":0,"cEst":true,"no":"MY02"},{"n":"若林","k":"わかばやし","c":"MT-MY15","la":35.02631,"lo":137.09584,"km":24.7,"r":0,"cEst":true,"no":"MY03"},{"n":"竹村","k":"たけむら","c":"MT-MY16","la":35.04008,"lo":137.11476,"km":27.0,"r":0,"cEst":true,"no":"MY04"},{"n":"土橋","k":"つちはし","c":"MT-MY17","la":35.05823,"lo":137.12947,"km":29.6,"r":0,"cEst":true,"no":"MY05"},{"n":"上挙母","k":"うわごろも","c":"MT-MY18","la":35.07192,"lo":137.15467,"km":32.4,"r":0,"cEst":true,"no":"MY06"},{"n":"豊田市","k":"とよたし","c":"MT-MY19","la":35.08726,"lo":137.15624,"km":34.2,"r":0,"cEst":true,"no":"MY07"},{"n":"梅坪","k":"うめつぼ","c":"MT-MY20","la":35.09967,"lo":137.16228,"km":35.6,"r":0,"cEst":true,"no":"MY08"},{"n":"越戸","k":"こしど","c":"MT-MY21","la":35.10767,"lo":137.18013,"km":37.6,"r":0,"cEst":true,"no":"MY09"},{"n":"平戸橋","k":"ひらとばし","c":"MT-MY22","la":35.11454,"lo":137.18459,"km":38.7,"r":0,"cEst":true,"no":"MY10"},{"n":"猿投","k":"さなげ","c":"MT-MY23","la":35.12174,"lo":137.17871,"km":39.8,"r":0,"cEst":true,"no":"MY11"}],"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-CK","name":"名鉄築港線","short":"築港線","op":"meitetsu","grp":"名鉄","color":"#868E96","st":[{"n":"大江","k":"おおえ","c":"MT-CK01","la":35.0933,"lo":136.9128,"km":0.0,"r":0,"kmEst":true,"cEst":true,"no":"TA03"},{"n":"東名古屋港","k":"ひがしなごやこう","c":"MT-CK02","la":35.08909,"lo":136.89918,"km":1.5,"r":0,"cEst":true,"no":"CH01"}],"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-KA","name":"名鉄各務原線","short":"各務原線","op":"meitetsu","grp":"名鉄","color":"#F03E3E","st":[{"n":"名鉄岐阜","k":"めいてつぎふ","c":"MT-KA01","la":35.41156,"lo":136.76102,"km":0.0,"r":0,"kmEst":true,"cEst":true,"no":"NH60"},{"n":"田神","k":"たがみ","c":"MT-KA02","la":35.41128,"lo":136.77216,"km":1.1,"r":0,"cEst":true,"no":"KG16"},{"n":"細畑","k":"ほそばた","c":"MT-KA03","la":35.40157,"lo":136.7854,"km":2.9,"r":0,"cEst":true,"no":"KG15"},{"n":"切通","k":"きりどおし","c":"MT-KA04","la":35.40028,"lo":136.79562,"km":3.9,"r":0,"cEst":true,"no":"KG14"},{"n":"手力","k":"てぢから","c":"MT-KA05","la":35.39826,"lo":136.80448,"km":4.8,"r":0,"cEst":true,"no":"KG13"},{"n":"高田橋","k":"たかだばし","c":"MT-KA06","la":35.3984,"lo":136.81153,"km":5.4,"r":0,"cEst":true,"no":"KG12"},{"n":"新加納","k":"しんかのう","c":"MT-KA07","la":35.39939,"lo":136.82439,"km":6.6,"r":0,"cEst":true,"no":"KG11"},{"n":"新那加","k":"しんなか","c":"MT-KA08","la":35.40011,"lo":136.83386,"km":7.5,"r":0,"cEst":true,"no":"KG10"},{"n":"市民公園前","k":"しみんこうえんまえ","c":"MT-KA09","la":35.40057,"lo":136.8419,"km":8.1,"r":0,"cEst":true,"no":"KG09"},{"n":"各務原市役所前","k":"かかみがはらしやくしょまえ","c":"MT-KA10","la":35.40085,"lo":136.84733,"km":8.7,"r":0,"cEst":true,"no":"KG08"},{"n":"六軒","k":"ろっけん","c":"MT-KA11","la":35.40107,"lo":136.86158,"km":9.9,"r":0,"cEst":true,"no":"KG07"},{"n":"三柿野","k":"みかきの","c":"MT-KA12","la":35.40008,"lo":136.87617,"km":11.2,"r":0,"cEst":true,"no":"KG06"},{"n":"二十軒","k":"にじっけん","c":"MT-KA13","la":35.40017,"lo":136.8893,"km":12.4,"r":0,"cEst":true,"no":"KG05"},{"n":"名電各務原","k":"めいでんかかみがはら","c":"MT-KA14","la":35.40256,"lo":136.90103,"km":13.7,"r":0,"cEst":true,"no":"KG04"},{"n":"苧ヶ瀬","k":"おがせ","c":"MT-KA15","la":35.4033,"lo":136.91238,"km":14.6,"r":0,"cEst":true,"no":"KG03"},{"n":"羽場","k":"はば","c":"MT-KA16","la":35.40119,"lo":136.92156,"km":15.5,"r":0,"cEst":true,"no":"KG02"},{"n":"鵜沼宿","k":"うぬまじゅく","c":"MT-KA17","la":35.39988,"lo":136.93241,"km":16.5,"r":0,"cEst":true,"no":"KG01"},{"n":"新鵜沼","k":"しんうぬま","c":"MT-KA18","la":35.39683,"lo":136.94426,"km":17.6,"r":4,"cEst":true,"no":"IY17"}],"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-TB","name":"名鉄竹鼻線","short":"竹鼻線","op":"meitetsu","grp":"名鉄","color":"#E67700","st":[{"n":"笠松","k":"かさまつ","c":"MT-TB01","la":35.37467,"lo":136.76465,"km":0.0,"r":0,"kmEst":true,"cEst":true,"no":"NH56"},{"n":"西笠松","k":"にしかさまつ","c":"MT-TB02","la":35.36883,"lo":136.75777,"km":0.9,"r":0,"cEst":true,"no":"TH01"},{"n":"柳津","k":"やないづ","c":"MT-TB03","la":35.36504,"lo":136.73993,"km":2.9,"r":0,"cEst":true,"no":"TH02"},{"n":"南宿","k":"みなみじゅく","c":"MT-TB04","la":35.34788,"lo":136.72866,"km":5.2,"r":0,"cEst":true,"no":"TH03"},{"n":"須賀","k":"すか","c":"MT-TB05","la":35.33987,"lo":136.72678,"km":6.1,"r":0,"cEst":true,"no":"TH04"},{"n":"不破一色","k":"ふわいしき","c":"MT-TB06","la":35.33297,"lo":136.72191,"km":7.0,"r":0,"cEst":true,"no":"TH05"},{"n":"竹鼻","k":"たけはな","c":"MT-TB07","la":35.32677,"lo":136.70644,"km":8.6,"r":0,"cEst":true,"no":"TH06"},{"n":"羽島市役所前","k":"はしましやくしょまえ","c":"MT-TB08","la":35.32194,"lo":136.69997,"km":9.6,"r":0,"cEst":true,"no":"TH07"},{"n":"江吉良","k":"えぎら","c":"MT-TB09","la":35.31544,"lo":136.69972,"km":10.3,"r":0,"cEst":true,"no":"TH08"}],"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}},{"id":"MT-HJ","name":"名鉄羽島線","short":"羽島線","op":"meitetsu","grp":"名鉄","color":"#D9480F","st":[{"n":"江吉良","k":"えぎら","c":"MT-HJ01","la":35.31544,"lo":136.69972,"km":0.0,"r":0,"cEst":true,"no":"TH08"},{"n":"新羽島","k":"しんはしま","c":"MT-HJ02","la":35.31533,"lo":136.68694,"km":1.3,"r":0,"cEst":true,"no":"TH09"}],"surcharge":{"0|1":30},"kmSrc":{"src":"名鉄 運賃・経路・時刻表検索（鉄道定期券運賃ページ）の営業キロ。路線の起点駅からの値","at":"2026-09-29"}}];window.RAIL_OPS={
   "meitetsu": {
     "label": "名鉄",
     "order": 2,
@@ -2849,7 +3102,19 @@ XFERS.forEach(function(x,i){
 /* ---------- state ---------- */
 var LEGACY_LINES=["NH","H","T","M","S","E","K"];
 function lineIndexById(id){ for(var i=0;i<LINES.length;i++) if(LINES[i].id===id) return i; return -1; }
-var st={line:0, from:null, to:null, via:[], passes:[], favs:null, ride:null, ttfav:null, hist:[]};
+/* 保存データ・バックアップ由来の駅コードの検査。IDX は素のオブジェクトなので IDX[c] だけだと "constructor" などが通ってしまう */
+function validStation(c){ return typeof c==="string" && Object.prototype.hasOwnProperty.call(IDX,c); }
+/* 保存データ・バックアップ由来の乗車記録を、使う項目だけ・型を確かめて作り直す。
+   種別(ty)などは画面の HTML に入るので、文字列でも記号を含むものは捨てる。不正なら乗車記録ごと捨てる（他の読込は巻き込まない） */
+function cleanRide(r){
+  if(!r || typeof r!=="object" || !validStation(r.f) || !validStation(r.t)) return null;
+  if(typeof r.dep!=="number" || !isFinite(r.dep) || (Date.now()-r.dep)>=6*3600e3) return null;
+  var o={f:r.f, t:r.t, dep:r.dep, ty:(typeof r.ty==="string" && r.ty.length<=12 && !/[<>&"'`]/.test(r.ty)) ? r.ty : null};
+  ["arr","p2","late","lateN","off"].forEach(function(k){ if(typeof r[k]==="number" && isFinite(r[k])) o[k]=r[k]; });
+  if(r.tr && typeof r.tr==="object" && (r.tr.d==="wd"||r.tr.d==="hd") && typeof r.tr.r==="number" && typeof r.tr.t==="number") o.tr={d:r.tr.d, r:r.tr.r, t:r.tr.t};
+  return o;
+}
+var st={line:0, from:null, to:null, via:[], passes:[], favs:null, ride:null, ttfav:null, hist:[], rs:[]};
 try{var raw=localStorage.getItem("aichi-rail-v2")||localStorage.getItem("aichi-rail-v1");
   if(raw){var o=JSON.parse(raw);
     /* 保存形式：v6 以降は路線ID（文字列）、それ以前は LINES の添字（数値。当時の並びは LEGACY_LINES） */
@@ -2862,8 +3127,10 @@ try{var raw=localStorage.getItem("aichi-rail-v2")||localStorage.getItem("aichi-r
     if(o&&o.ttfav)st.ttfav=o.ttfav.filter(function(p){return IDX[p.c];});
     if(o&&o.hist&&o.hist.length)st.hist=o.hist.filter(function(h){return h&&IDX[h.f]&&IDX[h.t]&&h.dep;}).slice(0,100);
     if(o&&o.via&&o.via.length)st.via=o.via.filter(function(c){return IDX[c];}).slice(0,3);
-    if(o&&o.ride&&IDX[o.ride.f]&&IDX[o.ride.t]&&(Date.now()-o.ride.dep)<6*3600e3)st.ride=o.ride;
+    var rd=cleanRide(o&&o.ride); if(rd) st.ride=rd;
   }}catch(e){}
+/* 「最近の駅」は独立した try で読む。型が不正でも、ここで例外を出して上の経由・乗車の読込を巻き込まないため */
+try{ if(raw){ var o3=JSON.parse(raw); if(o3 && Array.isArray(o3.rs)) st.rs=o3.rs.filter(validStation).slice(0,8); } }catch(e){}
 if(!st.favs) st.favs=[{a:"NH01",b:"NH36"},{a:"H08",b:"H18"},{a:"M01",b:"M03"}];
 if(!st.ttfav) st.ttfav=[];
 if(!st.via) st.via=[];
@@ -4483,7 +4750,8 @@ window.VGapi={
   from:function(){ return st.from; },
   to:function(){ return st.to; },
   render:function(){ if(typeof render==="function") render(); },
-  endRide:function(){ if(typeof endRide==="function") endRide(); }
+  endRide:function(){ if(typeof endRide==="function") endRide(); },
+  navLen:function(){ return navStack.length; }
 };
 
 /* ---------- 開始・停止 ---------- */
@@ -6089,26 +6357,27 @@ function applyMView(){
 }
 
 /* ---------- 検索条件 ---------- */
-var Q={mode:"now", t:null, sort:"fast"};
+/* 検索条件の唯一の状態。t＝指定した時刻（分。null なら今）、d＝何日先か（出発・到着のときだけ有効）。
+   条件シートの入力欄は持たず、シートを開くたびにここから描き直す（二重管理にしない） */
+var Q={mode:"now", t:null, d:0, sort:"fast"};
+var Q_MODES=[["now","今すぐ"],["dep","出発"],["arr","到着"],["first","始発"],["last","終電"]];
 function qNow(){ var d=new Date(); return d.getHours()*60+d.getMinutes(); }
-function qPickMin(){
-  var dv=$("qDate").value, tv=$("qTimeIn").value;
-  var m=/^(\d{1,2}):(\d{2})$/.exec(tv||"");
-  if(!m) return qNow();
-  return (+m[1])*60+(+m[2]);
+function qTimed(){ return Q.mode==="dep" || Q.mode==="arr"; }
+function qPickMin(){ return Q.t==null ? qNow() : Q.t; }
+function qDateObj(){ var d=new Date(); d.setDate(d.getDate()+(qTimed()?Q.d:0)); return d; }
+function qDateLabel(off){
+  if(off===0) return "今日"; if(off===1) return "明日";
+  var d=new Date(); d.setDate(d.getDate()+off);
+  return (d.getMonth()+1)+"/"+d.getDate()+"("+"日月火水木金土".charAt(d.getDay())+")";
 }
-function qSyncInputs(){
-  var d=new Date();
-  if(!$("qDate").value) $("qDate").value = d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2);
-  if(!$("qTimeIn").value) $("qTimeIn").value = hmInput(Date.now());
-  $("qWhen").hidden = (Q.mode!=="dep" && Q.mode!=="arr");
-  Array.prototype.forEach.call($("qMode").children,function(b){
-    b.setAttribute("aria-pressed", b.getAttribute("data-qmode")===Q.mode);
-  });
-  Array.prototype.forEach.call($("qSort").children,function(b){
-    b.setAttribute("aria-pressed", b.getAttribute("data-qsort")===Q.sort);
-  });
+/* 条件チップの文言。「今すぐ・早い順」「今日 08:15発・乗換が楽」 */
+function qText(){
+  var sort=Q.sort==="easy"?"乗換が楽":"早い順", base=(Q_MODES.filter(function(m){return m[0]===Q.mode;})[0]||Q_MODES[0])[1];
+  if(!qTimed()) return base+"・"+sort;
+  var t=qPickMin();
+  return qDateLabel(Q.d)+" "+hhmm(t)+(Q.mode==="dep"?"発":"着")+"・"+sort;
 }
+function qSyncInputs(){ var el=$("condTxt"); if(el) el.textContent=qText(); }
 /* 条件に応じて候補を作る */
 function buildCands(){
   var pts=routePoints().map(nhSi);
@@ -6117,7 +6386,8 @@ function buildCands(){
   for(var pj=1;pj<pts.length;pj++) if(pts[pj]===pts[pj-1]) return null;
   var via=pts.length>2;
   var fs=pts[0], ts=pts[pts.length-1];
-  var hol=(freqDay||(isHolidayToday()?"hd":"wd"))==="hd", day=hol?"hd":"wd", dir=pts[1]>fs?1:-1;
+  /* 日付を先にした出発・到着は、その日の平日／土休日で探す。それ以外は従来どおり（発車の目安の切替に合わせる） */
+  var hol=(qTimed()&&Q.d>0) ? dayKind(qDateObj()).hd : (freqDay||(isHolidayToday()?"hd":"wd"))==="hd", day=hol?"hd":"wd", dir=pts[1]>fs?1:-1;
   var dr=(Q.sort==="easy");
   var seek=function(start,n,scan){
     return via ? nhChainAt(day,pts,start,n,scan,dr)
@@ -6157,19 +6427,43 @@ function renderCands(p){
   var dk=dayKind(new Date());
   var dn = freqDay ? (freqDay==="hd"?"土休日":"平日") : (dk.hd?"土休日":"平日");
   $("candNote").textContent = CANDS.note+"・"+dn+(!freqDay&&dk.why!=="平日"&&dk.why!=="土曜"&&dk.why!=="日曜"?"（"+dk.why+"）":"");
+  /* 上位3件だけ出す。残りは「他N件」で同じ場所に展開（展開したときだけ候補の欄の中でスクロール） */
+  var key=routePoints().join(">")+"|"+Q.mode+"|"+Q.t+"|"+Q.d+"|"+Q.sort;
+  if(key!==candKey){ candKey=key; candSel=0; candOpen=false; }
+  var n=CANDS.list.length, shown=candOpen?n:Math.min(3,n);
+  if(candSel>=n) candSel=0;
   var bestShown=false;
-  $("candList").innerHTML = CANDS.list.map(function(c,i){
+  $("candList").innerHTML = CANDS.list.slice(0,shown).map(function(c,i){
     var mins=nhMinutes(c.dep,c.arr), wait=Math.round((toMs(c.dep)-Date.now())/60000);
     var tys=c.legs.map(function(g){ return nhTrain(CANDS.day,g.dir||CANDS.dir,g.t).ty; });
-    return '<button class="cand" type="button" data-cand="'+i+'">'+
-      '<div class="t1"><span style="font-size:19px">'+hhmm(c.dep)+'</span><span class="arw">→</span>'+
-      '<span style="font-size:19px">'+hhmm(c.arr)+'</span>'+
-      (mins===best&&!bestShown?(bestShown=true,'<span class="bestchip">最速</span>'):'')+'<span class="dur">'+mins+'分</span></div>'+
-      '<div class="t2">'+tys.map(function(t){ return '<span class="badge" style="--tc:'+tyColor(t)+'">'+t+'</span>'; }).join('')+
-      '<span>乗換 '+(c.legs.length-1)+'回</span><span class="sep">|</span><span>'+p.pay+'円</span>'+
-      (Q.mode==="now"&&wait>=0&&wait<=90?'<span class="sep">|</span><span>あと'+wait+'分</span>':'')+
-      '</div></button>';
+    var isBest=(mins===best&&!bestShown)&&(bestShown=true);
+    var sub='乗換'+(c.legs.length-1)+'回'+(Q.mode==="now"&&wait>=0&&wait<=90?'・あと'+wait+'分':'');
+    return '<button class="cand'+(i===candSel?' sel':'')+'" type="button" data-cand="'+i+'" aria-pressed="'+(i===candSel)+'">'+
+      '<span class="tm">'+hhmm(c.dep)+'<span class="arw">→</span>'+hhmm(c.arr)+'</span>'+
+      tys.map(function(t){ return '<span class="badge" style="--tc:'+tyColor(t)+'">'+t+'</span>'; }).join('')+
+      '<span class="dst">'+sub+'</span>'+
+      '<span class="dur'+(isBest?' best':'')+'">'+mins+'分</span></button>';
   }).join("");
+  var mb=$("candMore");
+  mb.hidden=(n<=3);
+  mb.textContent=candOpen?"閉じる ▴":"他"+(n-3)+"件 ▾";
+  mb.setAttribute("aria-expanded",candOpen);
+  box.classList.toggle("open",candOpen);
+}
+var candSel=0, candOpen=false, candKey="";
+/* 選んだ電車で乗車を記録する。主ボタンと、停車駅シートの「この電車で乗車を記録」の共通処理 */
+function rideFromCand(ci){
+  var c2=CANDS&&CANDS.list[ci]; if(!c2) return false;
+  var ty0=nhTrain(CANDS.day,c2.legs[0].dir||CANDS.dir,c2.legs[0].t).ty;
+  var last=c2.legs[c2.legs.length-1];
+  var T2=nhTrain(CANDS.day,last.dir||CANDS.dir,last.t), p2=null;
+  for(var q=0;q<T2.stops.length;q++){
+    if(T2.stops[q].si===CANDS.to && q>=2){ p2=toMs(T2.stops[q-2].m); break; }
+  }
+  st.ride={f:st.from,t:st.to,dep:toMs(c2.dep),ty:ty0,arr:toMs(c2.arr),p2:p2,
+           tr:{d:CANDS.day, r:(c2.legs[0].dir||CANDS.dir), t:c2.legs[0].t}};   /* 選んだ列車そのもの（停車駅が分かる） */
+  rideAutoCopy();
+  return true;
 }
 
 /* ---------- 停車駅シート ---------- */
@@ -6407,6 +6701,12 @@ function renderFavs(){
         '<button class="x" type="button" data-delfav="'+i+'" aria-label="削除">'+IC.close+'</button></span>';
     }).join("");
   }
+  /* 横1行のチップ（縦に増やさない）。登録・並べ替え・名前変更は「⋯」の管理シート（上の #favList）で行う */
+  $("favStrip").innerHTML = st.favs.length ? st.favs.map(function(p,i){
+    var on=(st.from===p.a&&st.to===p.b)||(st.from===p.b&&st.to===p.a), rev=on&&st.from===p.b;
+    var txt = p.t ? vgEsc(p.t) : (rev?byCode(p.b).n:byCode(p.a).n)+" → "+(rev?byCode(p.a).n:byCode(p.b).n);
+    return '<button class="rchip fchip" type="button" data-fav="'+i+'" aria-pressed="'+on+'" style="--c:'+LINES[byCode(p.a).li].color+'"><i></i>'+txt+'</button>';
+  }).join("") : '<span class="favnone">区間を登録するとここに並びます</span>';
   var r=$("favRename");
   if(renameIdx>=0 && st.favs[renameIdx]){
     r.hidden=false;
@@ -6455,7 +6755,7 @@ function rideLayout(on){
   if(on!==rideLayoutOn){
     rideLayoutOn=on;
     if(on){ pr.insertBefore(rc,pr.firstChild); pr.insertBefore(bar,rc.nextSibling); }
-    else { pr.insertBefore(rc,vc); pr.insertBefore(bar,vc); pr.classList.remove("showall"); bar.firstElementChild.setAttribute("aria-pressed","false"); bar.firstElementChild.textContent="経路・検索・発車の目安も表示"; }
+    else { pr.insertBefore(rc,vc); pr.insertBefore(bar,vc); pr.classList.remove("showall"); bar.firstElementChild.setAttribute("aria-pressed","false"); bar.firstElementChild.textContent="経路・検索を戻す"; }
   }
   bar.hidden=!on;
 }
@@ -6497,15 +6797,16 @@ function renderRide(){
       ? '<div class="ttlab">この時刻の電車に乗る</div><div class="freqdirs" style="padding:0">'+deps.map(depChip).join("")+'</div>'
       : "");
     deps=deps.concat(past);
-    box.innerHTML='<div class="ridehd"><h2>乗車を記録</h2></div>'+
+    box.innerHTML='<div class="grab" aria-hidden="true"></div><div class="ridehd"><h2>乗車を記録</h2>'+
+      '<button class="btn icon" type="button" id="rfClose" aria-label="閉じる">'+IC.close+'</button></div>'+
       '<div class="ridebody">'+ depHTML +
       '<div class="rideform"><input id="rideTime" type="time" value="'+hmInput(Date.now())+'">'+
         '<button class="btn small" type="button" id="rideNow">今</button>'+
         '<button class="btn filled small" type="button" id="rideGo">この時刻で乗車</button></div>'+
       (chips?'<div class="freqdirs" style="padding:0">'+chips+'</div>':"")+
-      '<p class="etaline">'+(deps.length?'上のボタンか、':'')+'乗った電車の発車時刻を入れると、到着予定と「今どのあたりか」を出します。</p>'+
       '<p class="etaline">登録すると、「'+vgEsc(sayFormat(SAYTPL,SAY_SAMPLE))+'」のような一言を出します。<button class="linkbtn" type="button" data-sayedit="1">書き方を変える</button></p>'+
       '</div>';
+    $("rfClose").onclick=rfClose;
     $("rideNow").onclick=function(){ $("rideTime").value=hmInput(Date.now()); };
     $("rideGo").onclick=function(){
       var ms=parseHM($("rideTime").value);
@@ -6521,6 +6822,7 @@ function renderRide(){
     return;
   }
   rideLayout(true);
+  rfDrop();
 
   var j=journey(st.ride.f,st.ride.t,st.ride.dep,st.ride.ty);
   var pos=rideState(j,Date.now());
@@ -6537,21 +6839,22 @@ function renderRide(){
   if(pos.done){
     body='<div class="ridenow"><b>到着予定時刻を過ぎました</b><span>'+byCode(st.ride.t).n+' 着 '+hm(arr)+'（予定）</span></div>';
   } else {
-    body='<div class="prog"><i style="width:'+(pos.pct*100).toFixed(1)+'%"></i></div>'+
-      '<div class="ridenow"><b>'+pos.text+'</b><span>'+(pos.sub||"")+
-        (pos.stationsLeft?'　／　残り '+pos.stationsLeft+'駅':'')+'</span></div>';
+    body='<div class="ridenow"><b>'+pos.text+'</b><span>'+(pos.sub||"")+
+        (pos.stationsLeft?'　／　残り '+pos.stationsLeft+'駅':'')+'</span></div>'+
+      '<div class="prog"><i style="width:'+(pos.pct*100).toFixed(1)+'%"></i></div>';
   }
+  /* 乗車中は「次の駅」を一番大きく、操作は「降りる」「遅れている」の2つを同じ大きさで並べる（見本は docs/mock/route.html） */
   box.innerHTML='<div class="ridehd"><h2>乗車中</h2>'+
-      '<button class="btn small" type="button" id="rideEnd">降りる</button></div>'+
+      '<span class="ridetime">'+hm(st.ride.dep)+' 発・'+vgEsc(st.ride.ty||j.steps.filter(function(s){return s.k==="ride";})[0].type)+'</span></div>'+
     '<div class="ridebody">'+
-      '<div class="stats" style="padding:0">'+
+      body+
+      '<div class="stats ridestats" style="padding:0">'+
         '<div class="stat"><div class="v">'+hm(arr)+'</div><div class="k">'+byCode(st.ride.t).n+' 到着予定</div></div>'+
         '<div class="stat"><div class="v">'+pos.remain+'<small>分</small></div><div class="k">残り</div></div>'+
-      '</div>'+ body +
-      '<div class="bacts"><button class="btn small" type="button" id="rideLate">遅れている（+'+LATE_STEP+'分）</button>'+
-        (st.ride.late?'<span class="etaline" style="margin:0 0 0 8px">予定より +'+Math.round(st.ride.late/60000)+'分遅れで計算中</span>':'')+'</div>'+
-      '<p class="etaline">'+hm(st.ride.dep)+' 発・'+(st.ride.ty||j.steps.filter(function(s){return s.k==="ride";})[0].type)+
-        '　所要 '+Math.round(j.total)+'分（概算）</p>'+
+      '</div>'+
+      '<div class="rbtns"><button class="btn filled" type="button" id="rideEnd">降りる</button>'+
+        '<button class="btn tonal" type="button" id="rideLate">遅れている（+'+LATE_STEP+'分）</button></div>'+
+      (st.ride.late?'<p class="etaline" style="margin:0">予定より +'+Math.round(st.ride.late/60000)+'分遅れで計算中</p>':'')+
       '<details class="ridemore"'+(rideMoreOpen?' open':'')+'><summary>その他（乗った文言・ポップアップの案内）</summary>'+
         '<div class="saybox"><span class="saytxt" id="sayTxt">'+vgEsc(rideSay())+'</span>'+
           '<button class="btn small" type="button" data-saycp="1">コピー</button>'+
@@ -6695,7 +6998,7 @@ function stopRideTimer(){ if(rideTimer){ clearInterval(rideTimer); rideTimer=nul
 
 function renderResult(){
   var box=$("res");
-  if(!st.from||!st.to||st.from===st.to){ box.hidden=true; return; }
+  if(!st.from||!st.to||st.from===st.to){ box.hidden=true; $("sumRow").hidden=true; $("candCard").hidden=true; $("recRow").hidden=true; CANDS=null; return; }
   box.hidden=false;
   var PTS=routePoints();
   var p=planPoints(PTS)||plan(st.from,st.to), a=byCode(st.from), b=byCode(st.to);
@@ -6772,6 +7075,27 @@ function renderResult(){
           '<span class="pill alt">安いルート</span> '+p.alt.label+' なら '+p.alt.m+'分 '+p.alt.pay+'円（−'+p.alt.save+'円）</span></div>';
   $("times").innerHTML=chips;
   $("legs").innerHTML=legh;
+  renderSummary(p);
+}
+/* 結果サマリ1行と主ボタン。選んだ電車があればその所要、無ければ時刻表に依らない目安 */
+function renderSummary(p){
+  var sel=(CANDS&&CANDS.list[candSel])||null;
+  var mins=sel ? nhMinutes(sel.dep,sel.arr) : p.fastest;
+  var yen=(p.full-p.pay>0)?p.pay:p.full;
+  $("sumRow").hidden=false;
+  $("sumTxt").textContent=mins+"分・"+p.hops+"駅・"+yen+"円";
+  $("sumBtn").setAttribute("aria-label","経路の詳細を開く。"+$("sumTxt").textContent);
+  $("rdTitle").textContent=$("sumTxt").textContent;
+  var note=(CANDS?CANDS.note+"の電車を表示しています。":"時刻表がない区間なので、所要は目安です。")+
+    ((p.fareStatus==="needs_review"||p.fareStatus==="provisional")?"運賃は目安です。":"");
+  $("tipSum").setAttribute("data-tip",note);
+  /* 主ボタン：候補があれば選んだ電車で記録。日付を先にした検索は「今日の電車」ではないので押せなくする */
+  var future=qTimed()&&Q.d>0;
+  $("recRow").hidden=false;
+  $("recBtn").disabled=!!future;
+  $("recBtn").setAttribute("aria-disabled",!!future);
+  $("recBtn").title=future?"今日の電車でないため記録できません":"";
+  $("rfOpen").hidden=!(CANDS&&CANDS.list.length);
 }
 function svBadge(s){
   if(typeof s.r!=="number") return "";
@@ -6850,6 +7174,7 @@ function openSheet(which){
 }
 function renderSheet(){
   var q=$("sheetFilter").value.trim().toLowerCase(), h="";
+  renderQuick(q);
   var only = (sheetTarget==="pass" && passDraft.a) ? IDX[passDraft.a].li : -1;
   LINES.forEach(function(L,li){
     if(only>=0 && li!==only) return;
@@ -6938,7 +7263,7 @@ document.addEventListener("click",function(e){
   var b=e.target && e.target.closest ? e.target.closest("#rideMoreBtn") : null; if(!b) return;
   var on=!$("paneRoute").classList.contains("showall");
   $("paneRoute").classList.toggle("showall",on); b.setAttribute("aria-pressed",on);
-  b.textContent = on ? "経路・検索を畳む" : "経路・検索・発車の目安も表示";
+  b.textContent = on ? "経路・検索を畳む" : "経路・検索を戻す";
 });
 /* 音声駅案内の音量スライダー（30〜300%。100%超は端末側で増幅） */
 function vgVolSet(pct){
@@ -6960,7 +7285,7 @@ document.addEventListener("change",function(e){
 });
 /* ---------- events ---------- */
 document.addEventListener("click",function(e){
-  var el=e.target.closest?e.target.closest("[data-accm],[data-accp],[data-pvn],[data-pvl],[data-cmp],[data-vgs],[data-vgv],[data-vge],[data-vgload],[data-dict],[data-dsave],[data-ddel],[data-dtry],[data-vg],[data-vgt],[data-vgstop],[data-viapick],[data-viaup],[data-viadn],[data-viadel],[data-bup],[data-bdn],[data-brd],[data-bdel],[data-bdir],[data-alarm],[data-rview],[data-rideset],[data-rideat],[data-lnsel],[data-mtap],[data-mview],[data-ttview],[data-mgrp],[data-qmode],[data-qsort],[data-ttfav],[data-ttfdel],[data-ttfedit],[data-ttline],[data-ttjump],[data-ttsub],[data-ttrain],[data-ttride],[data-cand],[data-ttdir],[data-ttday],[data-ttonly],[data-li],[data-to],[data-from],[data-pick],[data-delpass],[data-fdir],[data-day],[data-fav],[data-delfav],[data-pane],[data-theme],[data-notify],[data-arrvib],[data-overrun],[data-island],[data-autoupd],[data-saycp],[data-saycopy],[data-sayedit],[data-rtype],[data-ttdep],[data-favup],[data-favdn],[data-favren]"):null;
+  var el=e.target.closest?e.target.closest("[data-accm],[data-accp],[data-pvn],[data-pvl],[data-cmp],[data-vgs],[data-vgv],[data-vge],[data-vgload],[data-dict],[data-dsave],[data-ddel],[data-dtry],[data-vg],[data-vgt],[data-vgstop],[data-viapick],[data-viaup],[data-viadn],[data-viadel],[data-bup],[data-bdn],[data-brd],[data-bdel],[data-bdir],[data-alarm],[data-rview],[data-rideset],[data-rideat],[data-lnsel],[data-mtap],[data-mview],[data-ttview],[data-mgrp],[data-ttfav],[data-ttfdel],[data-ttfedit],[data-ttline],[data-ttjump],[data-ttsub],[data-ttrain],[data-ttride],[data-cand],[data-ttdir],[data-ttday],[data-ttonly],[data-li],[data-to],[data-from],[data-pick],[data-delpass],[data-fdir],[data-day],[data-fav],[data-delfav],[data-pane],[data-theme],[data-notify],[data-arrvib],[data-overrun],[data-island],[data-autoupd],[data-saycp],[data-saycopy],[data-sayedit],[data-rtype],[data-ttdep],[data-favup],[data-favdn],[data-favren]"):null;
   if(!el) return;
   if(el.hasAttribute("data-ttdep")){
     /* 候補の発車時刻そのもの（終電後は翌朝の始発なので、時刻だけから日付を決めると過去になってしまう） */
@@ -6975,8 +7300,6 @@ document.addEventListener("click",function(e){
     Array.prototype.forEach.call($("mGrp").children,function(b){ b.setAttribute("aria-pressed", b.getAttribute("data-mgrp")===g); });
     mapSetGroup(g); return;
   }
-  if(el.hasAttribute("data-qmode")){ Q.mode=el.getAttribute("data-qmode"); qSyncInputs(); renderResult(); return; }
-  if(el.hasAttribute("data-qsort")){ Q.sort=el.getAttribute("data-qsort"); qSyncInputs(); renderResult(); return; }
   if(el.hasAttribute("data-ttfdel")){
     st.ttfav.splice(+el.getAttribute("data-ttfdel"),1); save(); renderTTFav(); return;
   }
@@ -7027,10 +7350,13 @@ document.addEventListener("click",function(e){
   if(el.hasAttribute("data-cand")){
     if(!CANDS) return;
     var ci=+el.getAttribute("data-cand"), c=CANDS.list[ci];
-    if(c) dsOpen('<div class="dsact"><button class="btn filled" type="button" data-rideset="'+ci+'">'+
-                 'この電車で乗車を記録（'+hhmm(c.dep)+'発）</button></div>'+
-                 dsCand(CANDS.day,CANDS.dir,c,CANDS.from,CANDS.to),
-                 routePoints().map(function(cc){return byCode(cc).n;}).join(" → "));
+    if(!c) return;
+    /* 1回目のタップは選ぶだけ（主ボタンがこの電車で記録する）。選んである行をもう一度押すと停車駅のシート */
+    if(ci!==candSel){ candSel=ci; renderResult(); return; }
+    dsOpen('<div class="dsact"><button class="btn filled" type="button" data-rideset="'+ci+'">'+
+           'この電車で乗車を記録（'+hhmm(c.dep)+'発）</button></div>'+
+           dsCand(CANDS.day,CANDS.dir,c,CANDS.from,CANDS.to),
+           routePoints().map(function(cc){return byCode(cc).n;}).join(" → "));
     return;
   }
   if(el.hasAttribute("data-accm")){
@@ -7141,21 +7467,10 @@ document.addEventListener("click",function(e){
   if(el.hasAttribute("data-mtap")){ mapSetTap(el.getAttribute("data-mtap")); return; }
   if(el.hasAttribute("data-rview")){ offLoad(el.getAttribute("data-rview")); return; }
   if(el.hasAttribute("data-rideset")){
-    var c2=CANDS&&CANDS.list[+el.getAttribute("data-rideset")];
-    if(c2){
-      var ty0=nhTrain(CANDS.day,c2.legs[0].dir||CANDS.dir,c2.legs[0].t).ty;
-      var last=c2.legs[c2.legs.length-1];
-      var T2=nhTrain(CANDS.day,last.dir||CANDS.dir,last.t), p2=null;
-      for(var q=0;q<T2.stops.length;q++){
-        if(T2.stops[q].si===CANDS.to && q>=2){ p2=toMs(T2.stops[q-2].m); break; }
-      }
-      st.ride={f:st.from,t:st.to,dep:toMs(c2.dep),ty:ty0,arr:toMs(c2.arr),p2:p2,
-               tr:{d:CANDS.day, r:(c2.legs[0].dir||CANDS.dir), t:c2.legs[0].t}};   /* 選んだ列車そのもの（停車駅が分かる） */
-      rideAutoCopy();
+    if(rideFromCand(+el.getAttribute("data-rideset"))){
       history.back();
       showPane("Route",true);
       render();
-      setTimeout(function(){ var r=$("rideCard"); if(r&&r.scrollIntoView) try{ r.scrollIntoView({block:"center"}); }catch(e){} },80);
     }
     return;
   }
@@ -7220,7 +7535,7 @@ document.addEventListener("click",function(e){
     var p=st.favs[+el.getAttribute("data-fav")];
     if(st.from===p.a&&st.to===p.b){ st.from=p.b; st.to=p.a; }
     else { st.from=p.a; st.to=p.b; }
-    st.line=IDX[st.from].li; freqDir=null; render(); showPane("Route"); return;
+    st.line=IDX[st.from].li; freqDir=null; rsClose(); render(); showPane("Route"); return;
   }
   if(el.hasAttribute("data-fdir")){ freqDir=+el.getAttribute("data-fdir"); renderFreq(); return; }
   if(el.hasAttribute("data-day")){ freqDay=el.getAttribute("data-day"); renderFreq(); return; }
@@ -7230,6 +7545,7 @@ document.addEventListener("click",function(e){
   if(el.hasAttribute("data-to")){ var c2=el.getAttribute("data-to"); if(c2===st.from) return; st.to=c2; render(); return; }
   if(el.hasAttribute("data-pick")){
     var c3=el.getAttribute("data-pick");
+    if(sheetTarget==="from"||sheetTarget==="to"||sheetTarget==="via") recPush(c3);
     if(sheetTarget==="from"){ if(c3!==st.from) freqDir=null; st.from=c3; st.line=IDX[c3].li; if(st.to===c3)st.to=null; closeSheet(); }
     else if(sheetTarget==="to"){ st.to=c3; closeSheet(); }
     else if(sheetTarget==="via"){
@@ -7334,7 +7650,7 @@ if($("vgTest")) $("vgTest").onclick=function(){
 };
 applyVoiceSeg();
 $("clearBtn").onclick=function(){ st.to=null; render(); };
-document.addEventListener("keydown",function(e){ if(e.key==="Escape"&&!$("sheet").hidden){ passDraft.a=null; closeSheet(); renderPasses(); } });
+document.addEventListener("keydown",function(e){ if(e.key==="Escape"&&!$("sheet").hidden){ history.back(); } });   /* 履歴に積んだ分を外す。閉じる処理は popstate */
 
 $("mIn").onclick=function(){ mapZoom(1.5); };
 $("mOut").onclick=function(){ mapZoom(1/1.5); };
@@ -7351,12 +7667,21 @@ Array.prototype.forEach.call($("navbar").children,function(b){
 /* Android の戻るボタン：シートを閉じる → ルートタブへ戻る */
 var navDepth=0;
 try{ history.replaceState({d:0},""); }catch(e){}
-function pushNav(){ navDepth++; try{ history.pushState({d:navDepth},""); }catch(e){} }
+/* 積んだ履歴の種別（"rf"＝時刻指定フォーム、"x"＝すでに閉じて空になった印、それ以外は "s"）。
+   戻る操作で外れるのは一番上の1つだけなので、popstate はそれが何だったかを見て閉じる物を決める */
+var navStack=[];
+function pushNav(kind){ navDepth++; navStack.push(kind||"s"); try{ history.pushState({d:navDepth},""); }catch(e){} }
 window.addEventListener("popstate",function(){
   if(navDepth>0) navDepth--;
+  var nk=navStack.pop();
+  /* 乗車開始でフォームを閉じたあとに残った空の履歴。何も閉じず、続けてもう1つ戻る（利用者の戻る操作が空振りしないように）。
+     これより下に履歴が無い（navDepth が 0）ときは戻らない。x が続けば、同じ処理でさらに飛ばす */
+  if(nk==="x"){ if(navDepth>0) history.back(); return; }
+  if(nk==="rf"){ if(rfPushed){ rfPushed=false; rfHide(); } return; }
   if(typeof menuBack==="function" && menuBack()) return;
   if(!$("dSheet").hidden){ dsClose(); return; }
   if(!$("sheet").hidden){ passDraft.a=null; favDraft.a=null; closeSheet(); renderPasses(); return; }
+  var rso=rsOpenId(); if(rso){ rsHide(rso); return; }
   if(pane!=="Route"){ showPane("Route",true); }
 });
 function applyAlarmSeg(){
@@ -7501,8 +7826,6 @@ $("mFull").onclick=function(){
   this.setAttribute("aria-pressed", on);
   setTimeout(function(){ if(MAPS){ var pts=mapGroupPts(); if(pts.length){ MAPS.fitKey="full"; mapFit(pts,0.05); } } },60);
 };
-$("qDate").onchange=function(){ renderResult(); };
-$("qTimeIn").onchange=function(){ renderResult(); };
 qSyncInputs();
 $("boardAddBtn").onclick=function(){ boardAddOpen(true); };
 $("bEdit").onclick=function(){ boardEdit=!boardEdit; this.setAttribute("aria-pressed",boardEdit); this.textContent=boardEdit?"完了":"編集"; renderBoard(); };
@@ -7584,6 +7907,186 @@ function bindSheetDismiss(id, onClose){
   inn.addEventListener("pointerup",end);
   inn.addEventListener("pointercancel",end);
 }
+/* ---------- ルート画面のシート（条件・詳細・よく使う区間の管理）と、ⓘの吹き出し ----------
+   画面を1枚に収めるため、条件・詳細・登録/編集は下からのシートに逃がしてある（見本は docs/mock/route.html）。
+   開閉は dSheet と同じく履歴に積み、戻る操作（popstate）で閉じる。 */
+var RSHEETS=["cSheet","rdSheet","fSheet"];
+function rsOpenId(){ for(var i=0;i<RSHEETS.length;i++) if(!$(RSHEETS[i]).hidden) return RSHEETS[i]; return null; }
+function rsOpen(id){ tipHide(); $(id).hidden=false; pushNav(); }
+function rsHide(id){
+  $(id).hidden=true;
+  /* 編集モードのまま閉じても、次に開いたとき・チップを押したときに「編集中」が残らないようにする */
+  if(id==="fSheet"){ favEditing=false; renameIdx=-1; renderFavs(); }
+}
+/* 利用者の操作で閉じるときは履歴を戻す（popstate が rsHide を呼ぶ） */
+function rsClose(){ if(rsOpenId()) history.back(); }
+
+/* ---- 乗車前の記録フォーム（#rideCard）をシートとして開く。乗車カードは乗車中の先頭に動くので、CSS でだけシート表示にする ---- */
+var rfPushed=false;   /* フォームを開いたときに履歴へ積んだか（積んだ分は、閉じるとき history.back で外す） */
+function rfOpen(){
+  var pr=$("paneRoute"); if(pr.classList.contains("riding")||pr.classList.contains("rfopen")) return;
+  tipHide(); pr.classList.add("rfopen"); $("rfScrim").hidden=false; rfPushed=true; pushNav("rf");
+}
+function rfHide(){ $("paneRoute").classList.remove("rfopen"); $("rfScrim").hidden=true; }
+/* 閉じる操作（×・外側・Esc・乗車が始まったとき）。積んだ履歴は popstate が外して rfHide する */
+function rfClose(){ if(rfPushed){ $("rfScrim").hidden=true; history.back(); } else rfHide(); }
+/* 乗車が始まって描き直すときの閉じ方。history.back は非同期で、直後に別のシートを開くとそのシートを閉じてしまうので使わない。
+   履歴には触らず、積んだ分は「空」の印に置き換えるだけ。印は、あとの戻る操作が popstate で見つけて飛ばす */
+function rfDrop(){
+  if(rfPushed){ rfPushed=false; var i=navStack.lastIndexOf("rf"); if(i>=0) navStack[i]="x"; }
+  rfHide();
+}
+
+/* ---- ⓘの吹き出し：押したときだけ出す。外を押す・Esc・スクロールで消す ---- */
+var tipBtn=null;
+function tipHide(){
+  var b=$("bubble"); if(b) b.hidden=true;
+  if(tipBtn){ tipBtn.setAttribute("aria-expanded","false"); tipBtn.removeAttribute("aria-describedby"); tipBtn=null; }
+}
+function tipToggle(btn){
+  if(tipBtn===btn){ tipHide(); return; }
+  tipHide();
+  var tx=btn.getAttribute("data-tip"); if(!tx) return;
+  var b=$("bubble"); b.textContent=tx; b.hidden=false;
+  var r=btn.getBoundingClientRect(), w=b.offsetWidth, h=b.offsetHeight, vw=window.innerWidth, vh=window.innerHeight;
+  b.style.left=Math.max(8,Math.min(r.right-w,vw-w-8))+"px";
+  /* 下に出して画面の外にはみ出すなら、ボタンの上に出す */
+  b.style.top=((r.bottom+6+h>vh-8)?Math.max(8,r.top-6-h):(r.bottom+6))+"px";
+  btn.setAttribute("aria-expanded","true"); btn.setAttribute("aria-describedby","bubble"); tipBtn=btn;
+}
+document.addEventListener("click",function(e){
+  var t=e.target&&e.target.closest ? e.target.closest(".tipbtn") : null;
+  if(t){ tipToggle(t); return; }
+  if(tipBtn && !(e.target.closest&&e.target.closest("#bubble"))) tipHide();
+});
+/* Esc：開いている一番上のシートを1枚だけ閉じる。駅選択は下の既存の処理（同じく history.back）に任せる */
+document.addEventListener("keydown",function(e){
+  if(e.key!=="Escape") return;
+  if(tipBtn){ tipHide(); return; }
+  if(!$("sheet").hidden) return;
+  if(!$("dSheet").hidden || rsOpenId() || rfPushed) history.back();
+});
+window.addEventListener("scroll",tipHide,true);
+window.addEventListener("resize",tipHide);
+
+/* ---- 条件シート：スピナー（CSS scroll-snap。ライブラリなし） ----
+   1行44px（タップ領域の最小値）。上下に44pxの余白があるので、scrollTop＝番号×44 のとき、その行が中央の帯に来る */
+var WH_ROW=44, WH={};
+function whMake(id,labels){
+  var ul=$(id);
+  ul.innerHTML=labels.map(function(t,i){ return '<li role="option" aria-selected="false" data-i="'+i+'">'+t+'</li>'; }).join("");
+  var w={ul:ul,n:labels.length,idx:0,raf:0};
+  WH[id]=w;
+  w.mark=function(){
+    var i=Math.max(0,Math.min(w.n-1,Math.round(ul.scrollTop/WH_ROW)));
+    w.idx=i;
+    Array.prototype.forEach.call(ul.children,function(li,k){ li.classList.toggle("cur",k===i); li.setAttribute("aria-selected",k===i); });
+    if(id==="wBasis") whDim();
+  };
+  w.go=function(i,smooth){ i=Math.max(0,Math.min(w.n-1,i)); ul.scrollTo({top:i*WH_ROW,behavior:smooth?"smooth":"auto"}); };
+  w.set=function(i){ ul.scrollTop=i*WH_ROW; w.mark(); };
+  ul.addEventListener("scroll",function(){ if(!w.raf) w.raf=requestAnimationFrame(function(){ w.raf=0; w.mark(); }); });
+  ul.addEventListener("click",function(e){ var li=e.target.closest("li"); if(li && !w.dragged) w.go(+li.getAttribute("data-i"),true); });
+  /* キーボード・スイッチ操作でも選べるように */
+  ul.addEventListener("keydown",function(e){
+    if(e.key==="ArrowDown"){ e.preventDefault(); w.go(w.idx+1,true); }
+    else if(e.key==="ArrowUp"){ e.preventDefault(); w.go(w.idx-1,true); }
+    else if(e.key==="Home"){ e.preventDefault(); w.go(0,true); }
+    else if(e.key==="End"){ e.preventDefault(); w.go(w.n-1,true); }
+  });
+  /* マウスのドラッグ（タッチは標準のスクロールに任せる）。ドラッグ中だけ吸着を切る */
+  var drag=null;
+  ul.addEventListener("pointerdown",function(e){ if(e.pointerType!=="mouse") return; drag={y:e.clientY,t:ul.scrollTop,moved:false}; try{ ul.setPointerCapture(e.pointerId); }catch(x){} });
+  ul.addEventListener("pointermove",function(e){ if(!drag) return; var dy=e.clientY-drag.y; if(Math.abs(dy)>3){ drag.moved=true; ul.style.scrollSnapType="none"; ul.scrollTop=drag.t-dy; } });
+  function end(){ if(!drag) return; var mv=drag.moved; drag=null; ul.style.scrollSnapType="";
+    /* ドラッグの最後に出る click で、指を離した行へ飛ばないようにする */
+    if(mv){ w.dragged=true; setTimeout(function(){ w.dragged=false; },0); w.go(Math.round(ul.scrollTop/WH_ROW),true); } }
+  ul.addEventListener("pointerup",end); ul.addEventListener("pointercancel",end);
+  return w;
+}
+/* 基準が「出発」「到着」のときだけ、日付・時・分を使える */
+function whDim(){
+  var m=Q_MODES[WH.wBasis.idx][0], on=(m==="dep"||m==="arr");
+  ["wDate","wHour","wMin"].forEach(function(id){
+    var u=$(id); u.classList.toggle("off",!on); u.setAttribute("aria-disabled",!on); u.tabIndex=on?0:-1;
+  });
+}
+var cSortDraft="fast";
+function whInit(){
+  var hs=[],ms=[],ds=[],k;
+  for(k=0;k<24;k++) hs.push(("0"+k).slice(-2));
+  for(k=0;k<60;k++) ms.push(("0"+k).slice(-2));
+  for(k=0;k<7;k++) ds.push(qDateLabel(k));
+  whMake("wBasis",Q_MODES.map(function(m){return m[1];})); whMake("wDate",ds); whMake("wHour",hs); whMake("wMin",ms);
+}
+/* シートを開くたびに、いまの条件（Q）から描き直す */
+function whSync(){
+  var t=qPickMin(), mi=0;
+  Q_MODES.forEach(function(m,i){ if(m[0]===Q.mode) mi=i; });
+  var ds=[]; for(var k=0;k<7;k++) ds.push(qDateLabel(k));
+  WH.wDate.ul.innerHTML=ds.map(function(x,i){ return '<li role="option" aria-selected="false" data-i="'+i+'">'+x+'</li>'; }).join("");
+  WH.wBasis.set(mi); WH.wDate.set(qTimed()?Q.d:0); WH.wHour.set(Math.floor(t/60)%24); WH.wMin.set(t%60);
+  cSortDraft=Q.sort; cSortSync();
+}
+function cSortSync(){
+  Array.prototype.forEach.call($("sortSeg").children,function(b){ b.setAttribute("aria-pressed",b.getAttribute("data-csort")===cSortDraft); });
+}
+whInit();
+$("condChip").onclick=function(){ rsOpen("cSheet"); whSync(); };
+$("sortSeg").addEventListener("click",function(e){ var b=e.target.closest("button"); if(!b) return; cSortDraft=b.getAttribute("data-csort"); cSortSync(); });
+$("cDecide").onclick=function(){
+  var m=Q_MODES[WH.wBasis.idx][0], timed=(m==="dep"||m==="arr");
+  Q.mode=m; Q.d=timed?WH.wDate.idx:0; Q.t=timed?(WH.wHour.idx*60+WH.wMin.idx):null; Q.sort=cSortDraft;
+  rsClose(); qSyncInputs(); renderResult();
+};
+$("cClose").onclick=rsClose; $("rdClose").onclick=rsClose; $("fClose").onclick=rsClose;
+$("cClose").innerHTML=IC.close; $("rdClose").innerHTML=IC.close; $("fClose").innerHTML=IC.close;
+$("sumBtn").onclick=function(){ rsOpen("rdSheet"); };
+$("favMore").onclick=function(){ rsOpen("fSheet"); };
+$("candMore").onclick=function(){ candOpen=!candOpen; renderResult(); };
+/* 主ボタン：選んだ電車で記録。時刻表が無い区間は、時刻を入れるフォームを開く */
+$("recBtn").onclick=function(){
+  if(CANDS && CANDS.list.length && rideFromCand(candSel)) render();
+  else rfOpen();
+};
+$("rfOpen").onclick=rfOpen;
+$("rfScrim").onclick=rfClose;
+bindSheetDismiss("cSheet",function(){ history.back(); });
+bindSheetDismiss("rdSheet",function(){ history.back(); });
+bindSheetDismiss("fSheet",function(){ history.back(); });
+
+/* 駅を選ぶたびに「最近」へ覚える（先頭が新しい・8件まで） */
+function recPush(c){ if(!validStation(c)) return; st.rs=[c].concat((Array.isArray(st.rs)?st.rs:[]).filter(function(x){ return x!==c; })).slice(0,8); }
+
+/* ---- 駅選択シートの先頭：「よく使う」「最近」の横チップ ---- */
+function quickStations(){
+  var fav=[],seen={},rec=[];
+  (st.favs||[]).forEach(function(p){ [p.a,p.b].forEach(function(c){ if(validStation(c)&&!seen[c]&&fav.length<8){ seen[c]=1; fav.push(c); } }); });
+  (Array.isArray(st.rs)?st.rs:[]).concat((st.hist||[]).reduce(function(a,h){ a.push(h.t,h.f); return a; },[])).forEach(function(c){
+    if(validStation(c)&&!seen[c]&&rec.length<8){ seen[c]=1; rec.push(c); }
+  });
+  return {fav:fav,rec:rec};
+}
+function quickChips(codes){
+  return codes.map(function(c){
+    var s=byCode(c);
+    return '<button class="qchip" type="button" data-pick="'+c+'" style="--c:'+LINES[s.li].color+'"><i></i>'+s.n+'</button>';
+  }).join("");
+}
+function renderQuick(q){
+  var box=$("sheetQuick"), h="";
+  if(!q && sheetTarget!=="pass"){
+    var Qs=quickStations();
+    if(sheetTarget==="to" && st.to) h+='<div class="qrow"><button class="qchip clr" type="button" data-clearto="1">目的駅をクリア</button></div>';
+    if(Qs.fav.length) h+='<div class="qrow"><span class="qk">よく使う</span><div class="qchips">'+quickChips(Qs.fav)+'</div></div>';
+    if(Qs.rec.length) h+='<div class="qrow"><span class="qk">最近</span><div class="qchips">'+quickChips(Qs.rec)+'</div></div>';
+  }
+  box.innerHTML=h; box.hidden=!h;
+}
+$("sheetQuick").addEventListener("click",function(e){
+  if(e.target.closest&&e.target.closest("[data-clearto]")){ st.to=null; closeSheet(); render(); }
+});
+
 bindSheetDismiss("dSheet", function(){ history.back(); });
 bindSheetDismiss("sheet", function(){ passDraft.a=null; favDraft.a=null; closeSheet(); renderPasses(); });
 applyTheme();
