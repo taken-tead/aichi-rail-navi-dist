@@ -1,15 +1,15 @@
 {
  "schema": 1,
- "generated": "2026-10-14T04:03:54+00:00",
+ "generated": "2026-10-14T12:17:01+00:00",
  "web": {
-  "version": "20261014T040354Z",
+  "version": "20261014T121701Z",
   "minApp": 49,
   "base": "web/",
   "files": [
    {
     "path": "index.html",
-    "sha256": "655cc5671bf58ec99d94b28b31657fd4ff572dd95f8c17add88d3a9cd5f01ffd",
-    "size": 570972
+    "sha256": "6f5c482b97e7e25f09b8671da833570161e93eb113c9e28c2b0a45bffd952ccf",
+    "size": 747136
    },
    {
     "path": "data/geo.js",
@@ -23,8 +23,8 @@
    },
    {
     "path": "data/map.js",
-    "sha256": "4b6f9a3d4f70c744e374cb0114660adde8df44171992ae128fe5763106375453",
-    "size": 21710
+    "sha256": "b90e5c185ce6b03582b2997b1786f15f368ea85d5a7b19582f5a4f367a4ad021",
+    "size": 33979
    },
    {
     "path": "data/tt_NH.js",
@@ -35,6 +35,16 @@
     "path": "data/tt_SUB.js",
     "sha256": "e5647c6247a0ae68e62dbb719d05113da7ccd4c38c87e5ec7780a930a020d266",
     "size": 473392
+   },
+   {
+    "path": "data/tt_x_kintetsu.js",
+    "sha256": "8c9c8094507c2acfe465aa4f6a1d34bcf1ba5ced064b8324d6010baf974cdf2e",
+    "size": 95770
+   },
+   {
+    "path": "data/tt_x_toyotetsu.js",
+    "sha256": "51bd0f326d28f7944f9467aed8f8bd31f9c9dc6ea080e5ffd8d0c4d7406e7854",
+    "size": 71373
    },
    {
     "path": "help/update_flow.svg",
