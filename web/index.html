@@ -2423,6 +2423,16 @@ body[data-screen="Map"] .topbar{display:none}
 /* 実機：端末がダーク設定だと、色を指定していないボタンの文字が既定で白になり、ライトの白い面で見えなかった
    （最近見た駅・「現在地を使う」など）。地図ページのボタン・入力欄は文字色を明示する（個別の色指定は、:where の詳細度 0 なので負けない） */
 :where(.xstage) button,:where(.xstage) input{color:var(--on-surface)}
+/* 軽く動かすための層：画面の2倍の大きさで描き、動かしている間は transform だけで動かす */
+.xlayer{position:absolute;left:-50%;top:-50%;width:200%;height:200%;transform-origin:0 0;will-change:transform}
+.xlayer #mapBox,.xlayer #mxDyn{position:absolute;inset:0}
+#mxDyn2{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
+.xlsh{display:none}
+/* ダークの路線の明るさは、路線ごとではなく層ごと1回だけかける（フィルタは重い） */
+:root[data-theme="dark"] .xln,:root[data-theme="dark"] .xlc{filter:none}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .xln{filter:none}}
+:root[data-theme="dark"] #mgCl{filter:var(--map-line-f)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #mgCl{filter:var(--map-line-f)}}
 
 </style>
 </head>
@@ -2594,8 +2604,10 @@ body[data-screen="Map"] .topbar{display:none}
   <section class="pane" id="paneMap" hidden>
     <!-- 地図ページ：地図を全面に出し、検索・操作を上と右に浮かべ、結果は下のカードに出す（web/mapui.js。見本は docs/mock/map/map.html） -->
     <div class="xstage" id="mxStage">
-      <div id="mapBox" aria-label="路線の地図"></div>
-      <svg id="mxDyn" aria-hidden="true"><g id="mxDl"></g><g id="mxPg">
+      <!-- 重い層（地形・路線・駅の点・ラベル）は画面の2倍の大きさで一度だけ描き、動かしている間は CSS の変形だけで動かす（止まったら描き直す）。
+           経路の描き出し・ピン・現在地は軽いので、毎フレーム別の層に描く -->
+      <div class="xlayer" id="mxLayer"><div id="mapBox" aria-label="路線の地図"></div><svg id="mxDyn" aria-hidden="true"><g id="mxDl"></g></svg></div>
+      <svg id="mxDyn2" aria-hidden="true"><g id="mxRt"></g><g id="mxPg">
         <g id="mxPT" style="display:none"><ellipse rx="7" ry="2.6" fill="rgba(0,0,0,.32)"/><g class="xpin"><path d="M0 0C-7-9-11-13-11-18A11 11 0 1 1 11-18C11-13 7-9 0 0Z" fill="var(--primary)" stroke="var(--xhalo)" stroke-width="1.5"/><circle cy="-18" r="4.2" fill="var(--on-primary)"/></g></g>
         <g id="mxPS" style="display:none"><ellipse rx="7" ry="2.6" fill="rgba(0,0,0,.32)"/><g class="xpin"><path d="M0 0C-7-9-11-13-11-18A11 11 0 1 1 11-18C11-13 7-9 0 0Z" fill="#D93025" stroke="var(--xhalo)" stroke-width="1.5"/><circle cy="-18" r="4.2" fill="#fff"/></g></g>
         <g id="mxPF" style="display:none"><g class="xpin"><circle r="10" fill="var(--s-lowest)" stroke="var(--primary)" stroke-width="3.5"/><circle r="3.5" fill="var(--primary)"/></g></g>
@@ -14865,9 +14877,12 @@ function mxSize(){
   var e=$("mxStage"); if(!e) return;
   var r=e.getBoundingClientRect(); if(!r.width||!r.height) return;
   MX.w=r.width; MX.h=r.height;
-  var sv=$("mapSvg"), dy=$("mxDyn");
-  if(sv){ sv.setAttribute("width",MX.w); sv.setAttribute("height",MX.h); }
-  if(dy){ dy.setAttribute("width",MX.w); dy.setAttribute("height",MX.h); }
+  /* 重い層は画面の2倍の大きさで描く（動かしている間は、はみ出した分が見える） */
+  var sv=$("mapSvg"), dy=$("mxDyn"), d2=$("mxDyn2");
+  if(sv){ sv.setAttribute("width",MX.w*2); sv.setAttribute("height",MX.h*2); }
+  if(dy){ dy.setAttribute("width",MX.w*2); dy.setAttribute("height",MX.h*2); }
+  if(d2){ d2.setAttribute("width",MX.w); d2.setAttribute("height",MX.h); }
+  MXR.ok=false;
 }
 /* 上に浮かぶ部品の下端（px）。経路があるときは、検索欄が「出発・目的」の2段になる */
 function mxTopInset(){ return (mxDirOn()?160:106); }
@@ -14908,28 +14923,77 @@ function mxLineOn(li){ return !!MX.on[LINES[li].id]; }
 function mxShown(o,z,onR){ return onR || z>=(MX.allStn?9:18) || (o.key && (z>=3.2 || ((MXMAJOR[o.n]||MX.byN[o.n].length>=3) && z>=2.2))); }
 var MXMAJOR={"名鉄名古屋":1,"豊橋":1,"名鉄岐阜":1,"中部国際空港":1,"金山":1,"栄":1,"東岡崎":1,"犬山":1,"津島":1,"常滑":1,"河和":1,"知立":1,"藤が丘":1,"大曽根":1,"上小田井":1,"名古屋":1};
 
-/* ---------- 重ね層の描画（点・ラベル・経路・ピン・現在地）---------- */
+/* ---------- 描画：軽い動きと重い描き直しを分ける ----------
+   ・重い層（地形・路線・駅の点・ラベル）は、画面の2倍の広さを mxRender で描く。描いたときのカメラを MXR に覚える
+   ・動いている間（ドラッグ・慣性・ズーム・カメラ移動）は、その層に CSS の変形（移動＋拡大縮小）をかけるだけ。再描画しない
+   ・止まって 140ms たったら、いまのカメラで描き直す。動かしすぎて層のはみ出し・拡大縮小が大きくなったら、動いている途中でも描き直す
+   ・経路の描き出し・ピン・現在地は軽いので、毎フレーム別の層（#mxDyn2）に描く */
+var MXR={cx:0,cy:0,k:1,ok:false,t:0,last:0};
+function mxRedraw(){ MXR.ok=false; mxDraw(); }          /* 絞り込み・選択・経路などの変更：次のフレームで描き直す */
+function mxNeedFull(){
+  if(!MXR.ok) return true;
+  var s=MX.k/MXR.k;
+  if(s<.55||s>1.8) return true;
+  if(Math.abs((MXR.cx-MX.cx)*MX.k)>MX.w*.4||Math.abs((MXR.cy-MX.cy)*MX.k)>MX.h*.4) return true;
+  return false;
+}
 function mxPaint(){
-  if(!MX.ready||!MAPS) return;
-  var z=MX.k, sv=$("mapSvg"); if(!sv) return;
-  sv.setAttribute("viewBox",[MX.cx-MX.w/2/z,MX.cy-MX.h/2/z,MX.w/z,MX.h/z].join(" "));
-  var i, gs=["mgSh","mgCs","mgCl"];
-  gs.forEach(function(id){ var g=$(id); for(var j=0;j<g.children.length;j++) g.children[j].style.display=mxLineOn(MX.ord[j])?"":"none"; });
+  if(!MX.ready||!MAPS||!$("mapSvg")) return;
+  if(mxNeedFull()) mxRender();
+  else {
+    var s=MX.k/MXR.k, dx=(1-s)*MX.w+(MXR.cx-MX.cx)*MX.k, dy=(1-s)*MX.h+(MXR.cy-MX.cy)*MX.k;
+    $("mxLayer").style.transform="translate("+dx.toFixed(1)+"px,"+dy.toFixed(1)+"px) scale("+s.toFixed(4)+")";
+    if(dx||dy||s!==1){ clearTimeout(MXR.t); MXR.t=setTimeout(mxSettle,140); }
+  }
+  mxLight();
+}
+/* 動きが止まってから描き直す（まだ動いているなら、もう少し待つ） */
+function mxSettle(){ if(MXA.run||MXA.cam||MXA.fling){ MXR.t=setTimeout(mxSettle,140); return; } mxRender(); }
+/* 重い描き直し：いまのカメラを基準に、画面の2倍の広さの地形・路線・駅の点・ラベルを描く */
+function mxRender(){
+  clearTimeout(MXR.t);
+  var W=MX.w, H=MX.h, z=MX.k, sv=$("mapSvg");
+  MXR.cx=MX.cx; MXR.cy=MX.cy; MXR.k=z; MXR.ok=true;
+  $("mxLayer").style.transform="";
+  sv.setAttribute("viewBox",[MX.cx-W/z,MX.cy-H/z,2*W/z,2*H/z].join(" "));
+  var gs=["mgSh","mgCs","mgCl"];
+  gs.forEach(function(id){ var g=$(id); if(!g) return; for(var j=0;j<g.children.length;j++) g.children[j].style.display=mxLineOn(MX.ord[j])?"":"none"; });
   sv.setAttribute("class",MX.route?"xdimmed":"");
-  var out="", placed=[], top=mxTopInset();
+  function ex(x){ return (x-MX.cx)*z+W; }
+  function ey(y){ return (y-MX.cy)*z+H; }
+  var out="", placed=[];
   function fits(r){ for(var q=0;q<placed.length;q++){ var u=placed[q]; if(r[0]<u[2]&&r[2]>u[0]&&r[1]<u[3]&&r[3]>u[1]) return false; } return true; }
   function label(txt,x,y,cls,dx){
     var w=txt.length*(/xpin/.test(cls)?16:/key/.test(cls)?15:/geo b/.test(cls)?14.5:13.5)+8, h=18, tr=[[x+dx,y+4],[x-dx-w,y+4],[x-w/2,y-dx-2]];
     for(var q=0;q<tr.length;q++){ var t=tr[q], r=[t[0]-2,t[1]-h+2,t[0]+w,t[1]+3];
-      if(r[0]<2||r[2]>MX.w-2||r[1]<top-6) continue;
+      if(r[0]<2||r[2]>2*W-2||r[1]<2||r[3]>2*H-2) continue;
       if(fits(r)){ placed.push(r); out+='<text class="xt '+cls+'" x="'+t[0].toFixed(1)+'" y="'+t[1].toFixed(1)+'">'+mxEsc(txt)+'</text>'; return; } }
   }
-  /* 経路：影・縁取り・色。先頭から MX.rp の割合だけ描く */
-  var routeSvg="", onR={};
+  var onR={};
+  if(MX.route) MX.route.legs.forEach(function(g){ g.codes.forEach(function(c){ onR[c]=1; }); });
+  var toO=st.to?MX.byC[st.to]:null, fromO=st.from?MX.byC[st.from]:null, selO=MX.sel?MX.byC[MX.sel]:null, pins=[];
+  if(toO) pins.push(toO); if(fromO) pins.push(fromO); if(selO&&selO!==toO&&selO!==fromO) pins.push(selO);
+  pins.forEach(function(o){ label(o.n,ex(o.x),ey(o.y)-(o===fromO?0:10),"xpin",o===fromO?14:16); });
+  var vis=[], i, o;
+  for(i=0;i<MX.stn.length;i++){ o=MX.stn[i]; var X=ex(o.x), Y=ey(o.y); if(X>-20&&X<2*W+20&&Y>-20&&Y<2*H+20&&mxLineOn(o.li)){ o._x=X; o._y=Y; vis.push(o); } }
+  var seen={}, pn={}; pins.forEach(function(p){ pn[p.n]=1; });
+  var keyS=vis.filter(function(o){ if(!o.key||seen[o.n]) return false; seen[o.n]=1; return true; });
+  var dots="";
+  vis.forEach(function(o){ var r=onR[o.c]; if(mxShown(o,z,r)) dots+='<circle class="xdot" cx="'+o._x.toFixed(1)+'" cy="'+o._y.toFixed(1)+'" r="'+(r?4:(o.key?3.4:2.6))+'" stroke="'+LINES[o.li].color+'"/>'; });
+  if(z>=2.4) keyS.forEach(function(o){ if(pn[o.n]) return; if(z<7&&!(MXMAJOR[o.n]||MX.byN[o.n].length>=3)) return; label(o.n,o._x,o._y,"key",9); });
+  if(MX.geo) MX.geoL.forEach(function(g){
+    if(!((g.b||z>=3)&&(!g.w||z>=7))) return; var X=ex(g.x),Y=ey(g.y); if(X<0||X>2*W||Y<0||Y>2*H) return;
+    label(g.n,X,Y,"geo"+(g.b?" b":""),0);
+  });
+  if(z>=22||(MX.allStn&&z>=14)) vis.forEach(function(o){ if(pn[o.n]||o.key) return; label(o.n,o._x,o._y,"",8); });
+  $("mxDl").innerHTML=dots+out;
+}
+/* 毎フレーム描く軽い層：経路（先頭から MX.rp の割合）・ピン・現在地 */
+function mxLight(){
+  var routeSvg="";
   if(MX.route){
     var R=MX.route, drawn=R.len*MX.rp, acc=0, ss="", cs="", rs="";
     R.legs.forEach(function(g){
-      g.codes.forEach(function(c){ onR[c]=1; });
       var part=Math.max(0,Math.min(g.len,drawn-acc)); acc+=g.len; if(part<=0) return;
       var p=mxTrunc(g.pts,part), d="M"+p.map(function(q){ return mxSX(q[0]).toFixed(1)+" "+mxSY(q[1]).toFixed(1); }).join("L");
       ss+='<path d="'+d+'" transform="translate(0 2.5)" fill="none" stroke="var(--xlshadow)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>';
@@ -14938,24 +15002,11 @@ function mxPaint(){
     });
     routeSvg=ss+cs+rs;
   }
-  var toO=st.to?MX.byC[st.to]:null, fromO=st.from?MX.byC[st.from]:null, selO=MX.sel?MX.byC[MX.sel]:null, pins=[];
-  if(toO) pins.push(toO); if(fromO) pins.push(fromO); if(selO&&selO!==toO&&selO!==fromO) pins.push(selO);
-  pins.forEach(function(o){ label(o.n,mxSX(o.x),mxSY(o.y)-(o===fromO?0:10),"xpin",o===fromO?14:16); });
-  var vis=MX.stn.filter(function(o){ var X=mxSX(o.x),Y=mxSY(o.y); return X>-20&&X<MX.w+20&&Y>-20&&Y<MX.h+20&&mxLineOn(o.li); });
-  var seen={}, pn={}; pins.forEach(function(o){ pn[o.n]=1; });
-  var keyS=vis.filter(function(o){ if(!o.key||seen[o.n]) return false; seen[o.n]=1; return true; });
-  var dots="";
-  vis.forEach(function(o){ var r=onR[o.c]; if(mxShown(o,z,r)) dots+='<circle class="xdot" cx="'+mxSX(o.x).toFixed(1)+'" cy="'+mxSY(o.y).toFixed(1)+'" r="'+(r?4:(o.key?3.4:2.6))+'" stroke="'+LINES[o.li].color+'"/>'; });
-  if(z>=2.4) keyS.forEach(function(o){ if(pn[o.n]) return; if(z<7&&!(MXMAJOR[o.n]||MX.byN[o.n].length>=3)) return; label(o.n,mxSX(o.x),mxSY(o.y),"key",9); });
-  if(MX.geo) MX.geoL.forEach(function(g){
-    if(!((g.b||z>=3)&&(!g.w||z>=7))) return; var X=mxSX(g.x),Y=mxSY(g.y); if(X<0||X>MX.w||Y<0||Y>MX.h) return;
-    label(g.n,X,Y,"geo"+(g.b?" b":""),0);
-  });
-  if(z>=22||(MX.allStn&&z>=14)) vis.forEach(function(o){ if(pn[o.n]||o.key) return; label(o.n,mxSX(o.x),mxSY(o.y),"",8); });
-  $("mxDl").innerHTML=routeSvg+dots+out;
+  var rt=$("mxRt"); if(rt._h!==routeSvg||MX.route){ rt.innerHTML=routeSvg; rt._h=routeSvg; }
+  var toO=st.to?MX.byC[st.to]:null, fromO=st.from?MX.byC[st.from]:null, selO=MX.sel?MX.byC[MX.sel]:null;
   mxPin("mxPT",toO); mxPin("mxPF",fromO); mxPin("mxPS",selO&&selO!==toO&&selO!==fromO?selO:null);
   var g=$("mxPG");
-  if(MX.gps&&MX.gps.x!==undefined){ g.style.display=""; g.setAttribute("transform","translate("+mxSX(MX.gps.x)+" "+mxSY(MX.gps.y)+")"); $("mxGacc").setAttribute("r",Math.max(10,(MX.gps.acc||50)/1000*z)); }
+  if(MX.gps&&MX.gps.x!==undefined){ g.style.display=""; g.setAttribute("transform","translate("+mxSX(MX.gps.x)+" "+mxSY(MX.gps.y)+")"); $("mxGacc").setAttribute("r",Math.max(10,(MX.gps.acc||50)/1000*MX.k)); }
   else g.style.display="none";
 }
 function mxPin(id,o){
@@ -15156,7 +15207,7 @@ function renderMapView(){
   if(!MX.ready) return;
   if(MX.note && MX.note.from!==st.from && !MX.note.keep) MX.note=null;
   if(MX.sel&&!MX.byC[MX.sel]) MX.sel=null;
-  mxSyncRoute(); mxRenderTop(); mxRenderSheet(false); mxDraw();
+  mxSyncRoute(); mxRenderTop(); mxRenderSheet(false); mxRedraw();
 }
 /* 地図ページを開いたとき（showPane から）。初回だけ地図を作る */
 function applyMView(){ mapShow(); }
@@ -15171,7 +15222,7 @@ function mapShow(){
   if(MX.note && MX.note.from!==st.from && !MX.note.keep) MX.note=null;
   mxSetView(MX.view,true);
   mxRenderTop(); mxRenderSheet(true);
-  mxSyncRoute(); mxDoFit(); mxDraw();
+  mxSyncRoute(); mxDoFit(); mxRedraw();
   mxPaint();
 }
 
@@ -15381,16 +15432,16 @@ function mxClosePicker(){ if(!MX.pk.open) return; mxClosePickerDom(); mxPop("pic
 function mxPickerClick(e){
   var t=e.target;
   if(t.closest("[data-pdone]")){ mxClosePicker(); return; }
-  if(t.closest("[data-pall]")){ LINES.forEach(function(l){ MX.on[l.id]=true; }); mxRenderPicker(true); mxChipText(); mxDraw(); return; }
+  if(t.closest("[data-pall]")){ LINES.forEach(function(l){ MX.on[l.id]=true; }); mxRenderPicker(true); mxChipText(); mxRedraw(); return; }
   var pf=t.closest("[data-pf]"); if(pf){ e.stopPropagation(); var id=pf.getAttribute("data-pf"); MX.fm[id]=!MX.fm[id]; mxSave(); mxRenderPicker(true); return; }
   var pm=t.closest("[data-pm]"); if(pm){ mxChooseMap(pm.getAttribute("data-pm")); mxClosePicker(); return; }
   var gt=t.closest("[data-pgt]");
-  if(gt){ var o=gt.getAttribute("data-pgt"), ls=LINES.filter(function(l){ return l.op===o&&MAPD&&MAPD[l.id]; }), all=ls.every(function(l){ return MX.on[l.id]; }); ls.forEach(function(l){ MX.on[l.id]=!all; }); mxRenderPicker(true); mxChipText(); mxDraw(); return; }
+  if(gt){ var o=gt.getAttribute("data-pgt"), ls=LINES.filter(function(l){ return l.op===o&&MAPD&&MAPD[l.id]; }), all=ls.every(function(l){ return MX.on[l.id]; }); ls.forEach(function(l){ MX.on[l.id]=!all; }); mxRenderPicker(true); mxChipText(); mxRedraw(); return; }
   var g=t.closest("[data-pg]");
   if(g){ var op=g.getAttribute("data-pg"); if(op==="_") op=""; var M=g.hasAttribute("data-pm2")?MX.pk.openM:MX.pk.openG; M[op]=!M[op]; g.parentNode.classList.toggle("open",!!M[op]); return; }
   var pl=t.closest("[data-pl]");
   if(pl){ var li=+pl.getAttribute("data-pl"), l=LINES[li];
-    if(MX.pk.mode==="multi"){ MX.on[l.id]=!MX.on[l.id]; if(MX.on[l.id]){ MX.rl=[l.id].concat(MX.rl.filter(function(x){ return x!==l.id; })).slice(0,3); mxSave(); } mxRenderPicker(true); mxChipText(); mxDraw(); }
+    if(MX.pk.mode==="multi"){ MX.on[l.id]=!MX.on[l.id]; if(MX.on[l.id]){ MX.rl=[l.id].concat(MX.rl.filter(function(x){ return x!==l.id; })).slice(0,3); mxSave(); } mxRenderPicker(true); mxChipText(); mxRedraw(); }
     else { var cb=MX.pk.cb; mxClosePicker(); if(cb) cb(li); }
   }
 }
@@ -15429,7 +15480,7 @@ function mxBind(){
   $("mxPop").addEventListener("click",function(e){
     var t=e.target.closest("[data-tg]"); if(!t) return;
     var k=t.getAttribute("data-tg"); if(k==="geo") MX.geo=!MX.geo; else MX.allStn=!MX.allStn;
-    t.querySelector(".xsw").classList.toggle("on",k==="geo"?MX.geo:MX.allStn); t.setAttribute("aria-checked",k==="geo"?MX.geo:MX.allStn); mxDraw();
+    t.querySelector(".xsw").classList.toggle("on",k==="geo"?MX.geo:MX.allStn); t.setAttribute("aria-checked",k==="geo"?MX.geo:MX.allStn); mxRedraw();
   });
   document.addEventListener("click",function(e){ if(!e.target.closest("#mxPop,#mxLayer")) mxClosePop(); });
   $("mxChip").onclick=function(e){
@@ -15472,7 +15523,7 @@ function mxBind(){
     else if(a==="to") mxSetTo(MX.sel);
     else if(a==="from") mxSetFrom(MX.sel);
     else if(a==="tt"){ if(typeof ttPick==="function"&&ttPick(MX.sel)) showPane("TT"); else mxToast("この駅の時刻表は入っていません"); }
-    else if(a==="only"){ LINES.forEach(function(l){ MX.on[l.id]=(l.id===v); }); mxChipText(); mxDraw(); mxToast(LINES[lineIndexById(v)].short+"だけを表示しています"); }
+    else if(a==="only"){ LINES.forEach(function(l){ MX.on[l.id]=(l.id===v); }); mxChipText(); mxRedraw(); mxToast(LINES[lineIndexById(v)].short+"だけを表示しています"); }
     else if(a==="lmap"){ MX.sel=null; mxChooseMap(v); renderMapView(); }
     else if(a==="ride") showPane("Route");
     else if(a==="pickfrom") mxOpenSearch("from");
