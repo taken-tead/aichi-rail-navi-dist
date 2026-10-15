@@ -2412,6 +2412,14 @@ body[data-screen="Map"] .topbar{display:none}
 .xtl .xst em,.xtl .xbar span{font-size:13px}
 .xsec{font-size:13px}
 .xact{font-size:12.5px}
+/* ライトで白文字が見づらかった：主ボタン・丸ボタンのグラデーションの上側を白寄りにしていて青が薄くなっていた。
+   上を元の青、下を少し濃い青にして、白文字との差（4.5:1 以上）を保つ。文字に薄い影も付ける */
+.xbtn.f{background:linear-gradient(180deg,var(--primary),color-mix(in srgb,var(--primary) 84%,#000));text-shadow:0 1px 1px rgba(0,0,0,.28);font-weight:800}
+.xact.f i{background:linear-gradient(180deg,var(--primary),color-mix(in srgb,var(--primary) 84%,#000))}
+.xact.f i svg{filter:drop-shadow(0 1px 1px rgba(0,0,0,.3))}
+/* ダークは橙地に暗い文字なので、影は付けない */
+:root[data-theme="dark"] .xbtn.f{text-shadow:none}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .xbtn.f{text-shadow:none}}
 
 </style>
 </head>
