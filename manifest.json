@@ -1,15 +1,15 @@
 {
  "schema": 1,
- "generated": "2026-10-15T07:34:04+00:00",
+ "generated": "2026-10-15T08:58:47+00:00",
  "web": {
-  "version": "20261015T073404Z",
+  "version": "20261015T085847Z",
   "minApp": 54,
   "base": "web/",
   "files": [
    {
     "path": "index.html",
-    "sha256": "20c5d5450f6f23c0be0f963758e6c3c7683b485a4f63eb74a002f1055d282f48",
-    "size": 993705
+    "sha256": "d0cdc1643e5dff75879354930402bb03eb057f744e6365f33afb8084d52d143a",
+    "size": 993749
    },
    {
     "path": "data/geo.js",
@@ -40,6 +40,11 @@
     "path": "data/tt_x_kintetsu.js",
     "sha256": "8c9c8094507c2acfe465aa4f6a1d34bcf1ba5ced064b8324d6010baf974cdf2e",
     "size": 95770
+   },
+   {
+    "path": "data/tt_x_linimo.js",
+    "sha256": "eadc62576192e450e3bd8180cf9df208d12d07d8e6c332f81bbb0688c7014e24",
+    "size": 25536
    },
    {
     "path": "data/tt_x_toyotetsu.js",
