@@ -2420,6 +2420,9 @@ body[data-screen="Map"] .topbar{display:none}
 /* ダークは橙地に暗い文字なので、影は付けない */
 :root[data-theme="dark"] .xbtn.f{text-shadow:none}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .xbtn.f{text-shadow:none}}
+/* 実機：端末がダーク設定だと、色を指定していないボタンの文字が既定で白になり、ライトの白い面で見えなかった
+   （最近見た駅・「現在地を使う」など）。地図ページのボタン・入力欄は文字色を明示する（個別の色指定は、:where の詳細度 0 なので負けない） */
+:where(.xstage) button,:where(.xstage) input{color:var(--on-surface)}
 
 </style>
 </head>
