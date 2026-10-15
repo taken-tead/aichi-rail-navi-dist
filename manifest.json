@@ -1,20 +1,20 @@
 {
  "schema": 1,
- "generated": "2026-10-15T22:15:41+00:00",
+ "generated": "2026-10-15T23:12:57+00:00",
  "web": {
-  "version": "20261015T221541Z",
-  "minApp": 57,
+  "version": "20261015T231257Z",
+  "minApp": 59,
   "base": "web/",
   "files": [
    {
     "path": "index.html",
-    "sha256": "084152defff00327d406bc0bb92c7eefc8e7baf9940f8ba71fdb33c8b9073da1",
-    "size": 999865
+    "sha256": "df883bb84bc4ab16e81405d61fa1b128685b0309b442b5e720f2418ca28a84ef",
+    "size": 1031954
    },
    {
     "path": "data/geo.js",
-    "sha256": "1dfcef3cc26a8a0ce54d531049c903311a5825e185d257302a2b4afca36c57ea",
-    "size": 72156
+    "sha256": "15a88f1e92d52a24ac77e90beedd6c3791093b72b98a1dc214dc9bc74f8f4fd6",
+    "size": 79797
    },
    {
     "path": "data/ic_st.js",
@@ -94,10 +94,10 @@
   ]
  },
  "apk": {
-  "versionCode": 57,
-  "versionName": "5.25",
-  "url": "https://github.com/taken-tead/aichi-rail-navi-dist/releases/download/v57/aichi-rail-navi.apk",
-  "sha256": "1a40a060d745ffc3983ee931081db71a672228e61c097815981517e69b1f7890",
-  "size": 1887607
+  "versionCode": 59,
+  "versionName": "5.27",
+  "url": "https://github.com/taken-tead/aichi-rail-navi-dist/releases/download/v59/aichi-rail-navi.apk",
+  "sha256": "5ce9937c8516dd25e597baa991202161d66551bbc35937206f2de1caf77c708d",
+  "size": 1898277
  }
 }
