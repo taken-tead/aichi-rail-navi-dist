@@ -2391,6 +2391,27 @@ body[data-screen="Map"] .topbar{display:none}
 .xtop.srch .xdir{opacity:0;transform:translateY(-8px) scale(.98);pointer-events:none}
 .xtop.dirm.srch .xpill{opacity:1;transform:none;pointer-events:auto}
 .xtop.dirm.srch .xpw{height:52px}
+/* 実機で地図の陸が上半分で切れた：旧 #mapBox の height:min(62vh,560px) が残っていたので、全面に直す。チップ・切替の文字色も明示する */
+#mapBox{height:auto;min-height:0}
+.xchipb,.xseg button.xchip{color:var(--on-surface)}
+.xchipb .xcd+span{color:inherit}
+/* 実機で文字が見づらかった：地図のラベルを大きく・太く・縁取りを強く、地名の灰色を濃くする。カード・チップの小さい文字も 1〜1.5px 上げる */
+:root{--xgeo:#4F5562}
+.xt{font-size:13.5px;font-weight:700;stroke-width:5px;fill:var(--on-surface)}
+.xt.geo{font-size:13px;font-weight:600}
+.xt.geo.b{font-size:14.5px;font-weight:700}
+.xt.key{font-size:15px;font-weight:800}
+.xt.xpin{font-size:16px;font-weight:800}
+.xseg button{font-size:13.5px}
+.xchipb{font-size:13.5px}
+.xsub{font-size:13.5px}
+.xli .xn small{font-size:12.5px}
+.xbadge{font-size:12.5px;height:22px}
+.xnchip{font-size:13.5px;height:34px}
+.xbig span{font-size:14px}
+.xtl .xst em,.xtl .xbar span{font-size:13px}
+.xsec{font-size:13px}
+.xact{font-size:12.5px}
 
 </style>
 </head>
@@ -14887,7 +14908,7 @@ function mxPaint(){
   var out="", placed=[], top=mxTopInset();
   function fits(r){ for(var q=0;q<placed.length;q++){ var u=placed[q]; if(r[0]<u[2]&&r[2]>u[0]&&r[1]<u[3]&&r[3]>u[1]) return false; } return true; }
   function label(txt,x,y,cls,dx){
-    var w=txt.length*(/key|xpin/.test(cls)?13:12)+6, h=15, tr=[[x+dx,y+4],[x-dx-w,y+4],[x-w/2,y-dx-2]];
+    var w=txt.length*(/xpin/.test(cls)?16:/key/.test(cls)?15:/geo b/.test(cls)?14.5:13.5)+8, h=18, tr=[[x+dx,y+4],[x-dx-w,y+4],[x-w/2,y-dx-2]];
     for(var q=0;q<tr.length;q++){ var t=tr[q], r=[t[0]-2,t[1]-h+2,t[0]+w,t[1]+3];
       if(r[0]<2||r[2]>MX.w-2||r[1]<top-6) continue;
       if(fits(r)){ placed.push(r); out+='<text class="xt '+cls+'" x="'+t[0].toFixed(1)+'" y="'+t[1].toFixed(1)+'">'+mxEsc(txt)+'</text>'; return; } }
