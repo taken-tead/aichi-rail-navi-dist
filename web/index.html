@@ -2847,17 +2847,19 @@ body[data-screen="Map"] .topbar{display:none}
   --xsea:var(--m-water);--xsea2:var(--m-water);--xshoal:var(--m-shoal);--xland:var(--m-land)}
 /* 駅名・地名：太い縁取りでにじんで見えたので、小さく細くする（市区町村名はさらに控えめに） */
 .xt{font-size:13px;stroke-width:3.5px}
-.xt.geo{font-size:11.5px;font-weight:600;opacity:.8}
+.xt.geo{font-size:12px;font-weight:600;opacity:.8}
 .xt.geo.b{font-size:12.5px;font-weight:700}
 .xt.key{font-size:13px}
 .xt.xpin{font-size:15px}
 /* 右の操作：タッチ端末では拡大・縮小ボタンを出さない（ピンチで足りる）。重なって見づらかった */
 @media (pointer:coarse){.xzgrp{display:none}}
 
+/* 見た目32pxの「発車済み」の折りたたみは、押す範囲だけ上下に6pxずつ広げて44pxにする */
+#mxRtHost #paneRoute #candList .pfold::before{content:"";position:absolute;left:0;right:0;top:-6px;bottom:-6px}
 /* 経路の下シート：低く、主ボタンはいつも見える（下に貼り付ける） */
 #mxRtHost #paneRoute #candList .cand{min-height:52px}
 #mxRtHost #paneRoute #candList .cand.sel{min-height:68px}
-#mxRtHost #paneRoute #candList .pfold{height:32px;min-height:32px;font-size:13px;font-weight:700;padding:0 8px;text-align:left}
+#mxRtHost #paneRoute #candList .pfold{position:relative;height:32px;min-height:32px;font-size:13px;font-weight:700;padding:0 8px;text-align:left}
 #mxRtHost #paneRoute #candList .pcand{height:44px;min-height:44px;font-size:13px}
 #mxRtHost #paneRoute .recrow{position:sticky;bottom:-8px;z-index:3;padding:10px 4px 8px;margin:0;
   background:linear-gradient(180deg,transparent,var(--k-sheet) 22%)}
@@ -16112,9 +16114,12 @@ function renderMapView(){
 /* 地図ページを開いたとき（showPane から）。初回だけ地図を作る */
 function applyMView(){ mapShow(); }
 function mapShow(){
-  if(!MAPD) return;
+  if(!MAPD){ mxLoadFail(); return; }
+  try{ mapShowBody(); }catch(e){ try{ console.warn("map init failed",e); }catch(_){} mxLoadFail(); }
+}
+function mapShowBody(){
   mxLoad();
-  mapBuild(); if(!MAPS) return;
+  mapBuild(); if(!MAPS){ mxLoadFail(); return; }
   var first=!MX.ready;
   MX.ready=true;
   if(first) setInterval(function(){ var c=$("mxClk"); if(c) c.textContent=mxHm(Date.now()); mxRenderHdr(mxMode()); },15000);   /* 状態バーの時計（開くたびに増やさない） */
@@ -16131,8 +16136,17 @@ function mapShow(){
    見た目は head.html の .xload / .xsk。地図の最初の描画が終わったら xloading を外す（フェードは CSS の200ms）。
    下シートは本番と同じ行の高さの骨組みを出しておく。実物は mxRenderSheet が #mxBody を作り直すので、骨組みは自然に消える */
 function mxLoadDone(){
+  MX.painted=true;   /* MX.ready は初期化の途中で立つので、「描き終えた」は別の旗で持つ */
   var stg=$("mxStage"); if(stg) stg.classList.remove("xloading");
-  clearTimeout(mxLoadDone.t);
+  clearTimeout(mxLoadDone.t); clearTimeout(mxLoadDone.t2);
+}
+/* 失敗・タイムアウトの出口：幕を外して操作できる状態に戻し、文言とトーストで知らせる（幕が永遠に残らないように） */
+function mxLoadFail(msg){
+  if(MX.painted) return;
+  var stg=$("mxStage"); if(stg) stg.classList.remove("xloading");
+  clearTimeout(mxLoadDone.t); clearTimeout(mxLoadDone.t2);
+  var t=$("mxLoadTxt"); if(t) t.textContent=msg||"地図を読み込めませんでした";
+  try{ mxToast(msg||"地図を読み込めませんでした。アプリを開き直してください"); }catch(e){}
 }
 function mxSkeleton(force){
   var b=$("mxBody"); if(!b||MX.ready) return;
@@ -16143,7 +16157,9 @@ function mxSkeleton(force){
       : [[44,"input"],[54,"row"],[54,"row"],[54,"row"],[52,"btn"]];
   b.innerHTML='<div class="xsk" aria-hidden="true" data-k="'+kind+'">'+rows.map(function(r){ return '<i class="sk" style="height:'+r[0]+'px;border-radius:var(--k-r-'+r[1]+')"></i>'; }).join("")+'</div>';
   /* 3秒たっても描けないときは、文言を変えて止まっていないことを伝える */
-  mxLoadDone.t=setTimeout(function(){ var t=$("mxLoadTxt"); if(t&&!MX.ready) t.textContent="地図の準備に時間がかかっています"; },3000);
+  clearTimeout(mxLoadDone.t); clearTimeout(mxLoadDone.t2);
+  mxLoadDone.t=setTimeout(function(){ var t=$("mxLoadTxt"); if(t&&!MX.painted) t.textContent="地図の準備に時間がかかっています"; },3000);
+  mxLoadDone.t2=setTimeout(function(){ if(!$("paneMap").hidden) mxLoadFail("地図の準備が終わりませんでした"); },10000);   /* 地図タブを開いていないあいだは待つだけ */
 }
 
 /* ---------- 操作：駅を選ぶ・行き先にする ---------- */
@@ -16262,7 +16278,8 @@ function mxPop(kind){ var i=MX.pushes.lastIndexOf(kind); if(i<0) return; MX.push
 function mapBack(){
   if(MX.skip>0){ MX.skip--; return true; }
   var k=MX.pushes.pop(); if(!k) return false;
-  if(k==="picker") mxClosePickerDom();
+  if(k==="pop") mxClosePopDom();
+  else if(k==="picker") mxClosePickerDom();
   else if(k==="search"){ MX.searching=false; $("mxSearch").classList.remove("on"); $("mdQ").value=""; $("mdQ").blur(); mxRenderTop(); mxApplySheet(); mxDraw(); }
   return true;
 }
@@ -16373,12 +16390,14 @@ function mxChooseMap(id){
 }
 
 /* ---------- 設定の小さなポップアップ（地名・駅名をすべて出す）---------- */
-function mxClosePop(){ $("mxPop").classList.remove("on"); var b=$("mxLayerBtn"); if(b) b.setAttribute("aria-expanded","false"); }
+/* レイヤーパネルの開閉。ピッカー・検索と同じく、開くときに履歴へ積み（mxPush）、閉じる操作は mxPop で積んだ分を戻す。戻る操作では mapBack が mxClosePopDom だけ呼ぶ */
+function mxClosePopDom(){ $("mxPop").classList.remove("on"); var b=$("mxLayerBtn"); if(b) b.setAttribute("aria-expanded","false"); }
+function mxClosePop(){ if(!$("mxPop").classList.contains("on")) return; mxClosePopDom(); mxPop("pop"); }
 function mxOpenPop(){
   var p=$("mxPop"); if(p.classList.contains("on")){ mxClosePop(); return; }
   var sr=$("mxStage").getBoundingClientRect(), bt=$("mxLayerBtn").getBoundingClientRect();
   p.style.right="72px"; p.style.left="auto"; p.style.top=(bt.top-sr.top)+"px"; p.style.bottom="auto"; p.style.transformOrigin="top right";
-  $("mxLayerBtn").setAttribute("aria-expanded","true");
+  $("mxLayerBtn").setAttribute("aria-expanded","true"); mxPush("pop");
   $("mxPopTg").innerHTML='<div class="xtg" role="menuitemcheckbox" data-tg="geo" aria-checked="'+MX.geo+'">地名（市区町村）<span class="xsw'+(MX.geo?" on":"")+'"></span></div><div class="xtg" role="menuitemcheckbox" data-tg="all" aria-checked="'+MX.allStn+'">駅名をすべて出す<span class="xsw'+(MX.allStn?" on":"")+'"></span></div>';
   p.classList.add("on");
 }
@@ -16396,7 +16415,9 @@ window.MXapi={
   labels:function(){ return Array.prototype.map.call(document.querySelectorAll("#mxDl .xt"),function(t){ var r=t.getBoundingClientRect(); return {t:t.textContent,x:r.left,y:r.top,w:r.width,h:r.height}; }); },
   fit:function(){ mxFitAll(0); },
   /* 画面テスト用：読み込み中の状態に戻して見た目を測る（地図は一瞬で描けてしまうので）。skeleton は骨組みの高さの並びを返す */
-  loading:function(on){ var stg=$("mxStage"); if(on){ MX.ready=false; mxSkeleton(); stg.classList.add("xloading"); } else { MX.ready=true; stg.classList.remove("xloading"); mxRenderSheet(true); } },
+  /* 画面テスト用。show は初期化をもう一度走らせる（mapBuild を壊して失敗の出口を試すため） */
+  show:function(){ mapShow(); },
+  loading:function(on){ var stg=$("mxStage"); if(on){ MX.ready=false; MX.painted=false; mxSkeleton(); stg.classList.add("xloading"); } else { MX.ready=true; stg.classList.remove("xloading"); mxRenderSheet(true); } },
   skeleton:function(k){ MX.ready=false; mxSkeleton(k); return Array.prototype.map.call(document.querySelectorAll("#mxBody .xsk .sk"),function(e){ return Math.round(e.getBoundingClientRect().height); }); }
 };
 /* ---------- 入口の結びつけ（ui.js の起動処理から1回だけ呼ぶ）---------- */
@@ -16414,7 +16435,7 @@ function mxBind(){
   });
   document.addEventListener("click",function(e){ if(!e.target.closest("#mxPop,#mxLayerBtn")) mxClosePop(); });
   $("mxChip").onclick=function(e){
-    e.stopPropagation(); mxClosePop();
+    e.stopPropagation(); mxClosePopDom();   /* Why not：ここで mxPop しない。history.back は非同期で、続けて積むピッカーの履歴と順序が入れ替わる */
     if(MX.view==="map") mxOpenPicker("multi");
     else if(MX.view==="route") mxOpenPicker("maps");
     else mxOpenPicker("single",function(li){ st.line=li; render(); },st.line);
@@ -16464,7 +16485,7 @@ function mxBind(){
   $("mxGrip").addEventListener("click",function(){ mxSetDetent(MX.detent==="low"?"peek":MX.detent==="peek"?"half":MX.detent==="half"?"full":"low");   /* 低い→ちょい見せ→半分→全開→低い、の順に回る */ });
   $("mxGrip").addEventListener("keydown",function(e){ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); this.click(); } });
   window.addEventListener("resize",function(){ if(MX.ready&&!$("paneMap").hidden){ mxSize(); mxApplySheet(); mxDraw(); } });
-  document.addEventListener("keydown",function(e){ if(e.key==="Escape"&&MX.pk.open) mxClosePicker(); });
+  document.addEventListener("keydown",function(e){ if(e.key!=="Escape") return; if(MX.pk.open) mxClosePicker(); else mxClosePop(); });
 }
 
 /* カードのドラッグ：指に追従し、離すと勢いを足して一番近い段へ吸着。端ではゴムのように抵抗する */
@@ -17245,7 +17266,7 @@ var ACCENTS=[
   ["teal","ティール","teal","はっきり","#0F766E","#5EEAD4"],["deepteal","ディープティール","teal","はっきり","#115E59","#7DD3CB"],["petrol","ペトロール","teal","落ち着き","#2F5D62","#9CC5C9"],
   ["graphite","グラファイト","gray","はっきり","#334155","#CBD5E1"],["stone","ストーン","gray","落ち着き","#57534E","#D6D3D1"],["charcoal","チャコール","gray","落ち着き","#27272A","#D4D4D8"]
 ];
-var ACCIDX={}; ACCENTS.forEach(function(a){ ACCIDX[a[0]]=a; });
+var ACCIDX=Object.create(null);   /* 通常の {} だと保存値 "constructor" などが色の名前として通ってしまう */ ACCENTS.forEach(function(a){ ACCIDX[a[0]]=a; });
 var ACCENT="blue", ACCFAM="blue";
 try{ var av=localStorage.getItem("aichi-rail-navi-accent"); if(av&&ACCIDX[av]) ACCENT=av; }catch(e){}
 ACCFAM=ACCIDX[ACCENT][2];
